@@ -1,0 +1,34 @@
+{
+  "remnant.chirp": {
+    "subtitle": "subtitles.paradox.remnant.chirp",
+    "sounds": [{ "name": "entity.vex.ambient", "type": "event" }]
+  },
+  "remnant.fret": {
+    "subtitle": "subtitles.paradox.remnant.fret",
+    "sounds": [{ "name": "entity.allay.hurt", "type": "event" }]
+  },
+  "remnant.warn": {
+    "subtitle": "subtitles.paradox.remnant.warn",
+    "sounds": [{ "name": "block.note_block.chime", "type": "event" }]
+  },
+  "remnant.cheer": {
+    "subtitle": "subtitles.paradox.remnant.cheer",
+    "sounds": [{ "name": "entity.allay.item_taken", "type": "event" }]
+  },
+  "remnant.bind": {
+    "subtitle": "subtitles.paradox.remnant.bind",
+    "sounds": [{ "name": "entity.allay.item_given", "type": "event" }]
+  },
+  "remnant.save": {
+    "subtitle": "subtitles.paradox.remnant.save",
+    "sounds": [{ "name": "block.beacon.activate", "type": "event" }]
+  },
+  "remnant.fade": {
+    "subtitle": "subtitles.paradox.remnant.fade",
+    "sounds": [{ "name": "entity.allay.death", "type": "event" }]
+  },
+  "remnant.appear": {
+    "subtitle": "subtitles.paradox.remnant.appear",
+    "sounds": [{ "name": "block.amethyst_block.chime", "type": "event" }]
+  }
+}

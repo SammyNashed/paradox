@@ -1,0 +1,5 @@
+# Build output
+build/
+
+# Third-party jars, including the deobfuscated Minecraft client. Not redistributable.
+libs/
