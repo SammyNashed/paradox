@@ -718,6 +718,31 @@ public final class Remnant {
             }
         }
 
+        // The thing that eats what leaks between timelines. This is checked before anything
+        // else it might be doing: a Warden in the room outranks evokers, allays and errands.
+        // It looks around the Remnant as well as the player - the Remnant is often the one out
+        // in front, and it is the Remnant the Warden wants.
+        Warden warden = null;
+        double bestW = Double.MAX_VALUE;
+        for (Warden w : sl.getEntitiesOfClass(Warden.class,
+                vex.getBoundingBox().inflate(20.0).minmax(box), Warden::isAlive)) {
+            double d = w.distanceToSqr(vex);
+            if (d < bestW) { bestW = d; warden = w; }
+        }
+        if (warden != null) {
+            mood.warden = warden;
+            mood.wardenUntil = tick + 70;
+            mood.caster = null;
+            mood.bindPressure = 0;
+            vex.setTarget(null);
+            player.sendSystemMessage(Component.literal("§8Something below has noticed it."));
+            sl.playSound(null, vex.getX(), vex.getY(), vex.getZ(),
+                    ParadoxSounds.REMNANT_WARN, SoundSource.NEUTRAL, 1.0F, 0.5F);
+            sl.playSound(null, warden.getX(), warden.getY(), warden.getZ(),
+                    SoundEvents.WARDEN_ROAR, SoundSource.HOSTILE, 1.2F, 0.9F);
+            return;
+        }
+
         // An Allay will give back what an Evoker took, for the price of an amethyst shard.
         int lives = livesOf(vex);
         if (lives < ParadoxConfig.remnantLives) {
@@ -798,22 +823,16 @@ public final class Remnant {
                 return;   // it is caged and no longer theirs; nothing below applies to it
             }
         }
-
-        // And the thing that eats what leaks between timelines.
-        for (Warden warden : sl.getEntitiesOfClass(Warden.class, box, Warden::isAlive)) {
-            mood.warden = warden;
-            mood.wardenUntil = tick + 70;
-            player.sendSystemMessage(Component.literal("§8Something below has noticed it."));
-            sl.playSound(null, vex.getX(), vex.getY(), vex.getZ(),
-                    ParadoxSounds.REMNANT_WARN, SoundSource.NEUTRAL, 1.0F, 0.5F);
-            return;
-        }
     }
 
     /** Dragged in and drained. Nothing stops this: the Deep Dark is where the net does not reach. */
     private static void consumeByWarden(ServerLevel sl, ServerPlayer player, Vex vex, Mood mood, int tick) {
         Warden w = mood.warden;
         if (w == null || !w.isAlive()) { mood.wardenUntil = 0; mood.warden = null; return; }
+
+        // The Warden turns to it and holds on it. It is not fighting the player right now.
+        w.getLookControl().setLookAt(vex.getX(), vex.getY(), vex.getZ());
+        if (w.getTarget() == vex) w.setTarget(null);
 
         double ease = 0.10;
         vex.snapTo(vex.getX() + (w.getX() - vex.getX()) * ease,
