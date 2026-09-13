@@ -8,11 +8,14 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.ai.Brain;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.animal.allay.Allay;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.illager.Evoker;
 import net.minecraft.world.entity.monster.warden.Warden;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -846,6 +849,20 @@ public final class Remnant {
                 other.setTarget(null);
                 sl.sendParticles(ParticleTypes.GLOW, other.getX(), other.getY() + 0.5, other.getZ(),
                         2, 0.2, 0.2, 0.2, 0.0);
+            }
+        }
+
+        // Villagers flee any Vex on sight - it is how they treat an evoker's swarm, and vanilla
+        // does not tell them apart from ours. Clear only the fear this specific Remnant caused;
+        // a real threat standing next to it still gets a real reaction.
+        for (Villager v : sl.getEntitiesOfClass(Villager.class, box, Villager::isAlive)) {
+            Brain<?> brain = v.getBrain();
+            if (brain.getMemory(MemoryModuleType.NEAREST_HOSTILE).filter(e -> e == vex).isPresent()) {
+                brain.eraseMemory(MemoryModuleType.NEAREST_HOSTILE);
+            }
+            if (brain.getMemory(MemoryModuleType.AVOID_TARGET).filter(e -> e == vex).isPresent()) {
+                brain.eraseMemory(MemoryModuleType.AVOID_TARGET);
+                brain.eraseMemory(MemoryModuleType.IS_PANICKING);
             }
         }
 

@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -593,8 +594,7 @@ public final class LoopSession {
 
         // Re-apply the ghost's edits on cue.
         while (scriptCursor < script.size() && scriptAt[scriptCursor] <= reliveTick) {
-            BlockJournal.Change c = script.get(scriptCursor++);
-            level.setBlock(BlockPos.of(c.pos()), c.after(), Block.UPDATE_ALL);
+            applyChange(script.get(scriptCursor++));
         }
 
         if (scheduledKillTick >= 0 && reliveTick >= scheduledKillTick
@@ -631,6 +631,26 @@ public final class LoopSession {
             return true;
         }
         return false;
+    }
+
+    /**
+     * The ghost's edits used to just appear - the kill got three visible blows and a sound, and a
+     * placed block got nothing, so you'd look down and it was simply already there. Now every
+     * restored block gets the same treatment: a burst of its own break/place particles and the
+     * matching vanilla sound, in whichever direction it actually went.
+     */
+    private void applyChange(BlockJournal.Change c) {
+        BlockPos pos = BlockPos.of(c.pos());
+        boolean removal = c.after().isAir() && !c.before().isAir();
+        BlockState forEffect = removal ? c.before() : c.after();
+
+        level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, forEffect),
+                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 16, 0.3, 0.3, 0.3, 0.05);
+        level.playSound(null, pos.getX(), pos.getY(), pos.getZ(),
+                removal ? c.before().getSoundType().getBreakSound() : c.after().getSoundType().getPlaceSound(),
+                SoundSource.BLOCKS, 0.7F, 1.0F);
+
+        level.setBlock(pos, c.after(), Block.UPDATE_ALL);
     }
 
     /**
@@ -671,8 +691,7 @@ public final class LoopSession {
     private void finishRelive(ServerPlayer player) {
         // Anything the schedule did not reach still has to land, or the world is left half-fixed.
         while (scriptCursor < script.size()) {
-            BlockJournal.Change c = script.get(scriptCursor++);
-            level.setBlock(BlockPos.of(c.pos()), c.after(), Block.UPDATE_ALL);
+            applyChange(script.get(scriptCursor++));
         }
         finished = true;
         cleanup();
