@@ -22,7 +22,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -262,14 +261,11 @@ public final class LoopSession {
 
         spawnHolograms(player);
 
-        player.sendSystemMessage(Component.literal("§c§l☠ YOU DIED — §r§cbut not yet."));
-        player.sendSystemMessage(Component.literal(
-                "§7Killed by §f" + causeLabel + "§7 at §f"
-                        + deathPos.getX() + " " + deathPos.getY() + " " + deathPos.getZ()
-                        + "§7. Gear held safe."));
-        player.sendSystemMessage(Component.literal("§b" + objective()));
-        player.sendSystemMessage(Component.literal(
-                "§8The replay loops on fast-forward. Fix it and you snap back the moment you do."));
+        player.sendSystemMessage(Component.literal("§c§l☠ YOU DIED — §r§cbut not yet.\n§7Killed by §f"
+                + causeLabel + "§7 at §f" + deathPos.getX() + " " + deathPos.getY() + " " + deathPos.getZ()
+                + "§7. Gear held safe."));
+        player.sendSystemMessage(Component.literal("§b" + objective()
+                + "\n§8The replay loops on fast-forward. Fix it and you snap back the moment you do."));
     }
 
     /** Plain English for what the player has to actually accomplish. */
@@ -570,12 +566,17 @@ public final class LoopSession {
         this.phase = Phase.RELIVE;
         this.reliveTick = 0;
 
-        player.sendSystemMessage(Component.literal("§d§l↻ REWOUND — §r§d" + (reliveTicks / 20) + " seconds back."));
-        player.sendSystemMessage(Component.literal(
-                "§7" + reverted + " block(s) put back. Live it again - something is looking after you."));
+        player.sendSystemMessage(Component.literal("§d§l↻ REWOUND — §r§d" + (reliveTicks / 20) + " seconds back.\n§7"
+                + reverted + " block(s) put back. Live it again - something is looking after you."));
     }
 
-    /** Space the ghost's edits across the re-live, keeping their original clumping and order. */
+    /** How many ticks apart consecutive placements must land, so a handful of blocks placed in
+     *  the same real-time instant still read as one-after-another rather than one cluster. */
+    private static final int MIN_PLACEMENT_GAP = 4;
+
+    /** Space the ghost's edits across the re-live, keeping their original order - and, unlike
+     *  their original clumping, at least {@link #MIN_PLACEMENT_GAP} ticks apart, so you actually
+     *  see and hear each one land instead of a stack of them appearing on the same tick. */
     private void buildSchedule() {
         this.scriptAt = new int[script.size()];
         if (script.isEmpty()) return;
@@ -585,6 +586,15 @@ public final class LoopSession {
         int usable = Math.max(1, reliveTicks - 10);
         for (int i = 0; i < script.size(); i++) {
             scriptAt[i] = 1 + (script.get(i).tick() - first) * usable / span;
+        }
+        // Enforce the minimum gap forward, then clamp everything back inside the usable window -
+        // a long build queues up near the end rather than overrunning into the final countdown.
+        for (int i = 1; i < scriptAt.length; i++) {
+            scriptAt[i] = Math.max(scriptAt[i], scriptAt[i - 1] + MIN_PLACEMENT_GAP);
+        }
+        int overflow = scriptAt[scriptAt.length - 1] - usable;
+        if (overflow > 0) {
+            for (int i = 0; i < scriptAt.length; i++) scriptAt[i] = Math.max(1, scriptAt[i] - overflow);
         }
         this.scriptCursor = 0;
     }
@@ -622,8 +632,8 @@ public final class LoopSession {
             Remnant.spawnGlimpse(level, player,
                     journal.now() + ParadoxConfig.remnantLingerSeconds * 20, origin());
             ParadoxAdvancements.grant(player, "something_pale");
-            player.sendSystemMessage(Component.literal("§d§oSomething pale is standing there."));
-            player.sendSystemMessage(Component.literal("§7Right-click it, quickly, before it goes."));
+            player.sendSystemMessage(Component.literal(
+                    "§d§oSomething pale is standing there.\n§7Right-click it, quickly, before it goes."));
         }
 
         if (reliveTick >= reliveTicks) {
@@ -636,16 +646,15 @@ public final class LoopSession {
     /**
      * The ghost's edits used to just appear - the kill got three visible blows and a sound, and a
      * placed block got nothing, so you'd look down and it was simply already there. Now every
-     * restored block gets the same treatment: a burst of its own break/place particles and the
-     * matching vanilla sound, in whichever direction it actually went.
+     * restored block gets the same treatment: its own vanilla break/place sound, in whichever
+     * direction it actually went, at the exact moment it lands - no particle burst, just the
+     * sound, spaced out one block at a time by {@link #buildSchedule()} so you hear them land in
+     * the order you placed them rather than as one cluster.
      */
     private void applyChange(BlockJournal.Change c) {
         BlockPos pos = BlockPos.of(c.pos());
         boolean removal = c.after().isAir() && !c.before().isAir();
-        BlockState forEffect = removal ? c.before() : c.after();
 
-        level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, forEffect),
-                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 16, 0.3, 0.3, 0.3, 0.05);
         level.playSound(null, pos.getX(), pos.getY(), pos.getZ(),
                 removal ? c.before().getSoundType().getBreakSound() : c.after().getSoundType().getPlaceSound(),
                 SoundSource.BLOCKS, 0.7F, 1.0F);
@@ -699,11 +708,10 @@ public final class LoopSession {
         player.setInvulnerable(false);
         player.removeEffect(MobEffects.INVISIBILITY);
         player.setInvisible(false);
-        player.sendSystemMessage(Component.literal("§a§l↺ YOU LIVED. §r§7The loop is closed."));
-        player.sendSystemMessage(Component.literal(
-                heldElsewhere ? "§5Nothing comes loose. Yours is still being held."
+        player.sendSystemMessage(Component.literal("§a§l↺ YOU LIVED. §r§7The loop is closed.\n"
+                + (heldElsewhere ? "§5Nothing comes loose. Yours is still being held."
                         : glimpse ? "§d§oThis time you saw it. It is still there."
-                        : "§8You never saw who saved you."));
+                        : "§8You never saw who saved you.")));
     }
 
     // ---------------------------------------------------------------------------------
@@ -734,16 +742,15 @@ public final class LoopSession {
             player.setHealth(Math.min(ParadoxConfig.returnHealth, player.getMaxHealth()));
             player.setRemainingFireTicks(0);
             player.fallDistance = 0;
-            player.sendSystemMessage(Component.literal("§a§l↺ PARADOX RESOLVED — §r§ayou live."));
-            player.sendSystemMessage(Component.literal("§7" + why + ". Everything is where you left it."));
+            player.sendSystemMessage(Component.literal(
+                    "§a§l↺ PARADOX RESOLVED — §r§ayou live.\n§7" + why + ". Everything is where you left it."));
         } else if (dryRun) {
             // Nothing was ever at stake here, so nothing dies. Hand the body back intact.
             player.setHealth(Math.max(ParadoxConfig.returnHealth, 1.0f));
             player.setRemainingFireTicks(0);
             player.fallDistance = 0;
-            player.sendSystemMessage(Component.literal("§e§l⏱ DRY RUN OVER — §r§eyou are fine."));
-            player.sendSystemMessage(Component.literal(
-                    "§7" + why + ", but this was a test. A real death here would have been permanent."));
+            player.sendSystemMessage(Component.literal("§e§l⏱ DRY RUN OVER — §r§eyou are fine.\n§7"
+                    + why + ", but this was a test. A real death here would have been permanent."));
         } else {
             ParadoxAdvancements.grant(player, "the_loop_closes");
             player.sendSystemMessage(Component.literal("§4§l☠ THE LOOP CLOSED — §r§4" + why + "."));

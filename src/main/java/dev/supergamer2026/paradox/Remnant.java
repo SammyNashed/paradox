@@ -355,10 +355,8 @@ public final class Remnant {
             if (p != null) {
                 ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) p).setAttached(AWAITING_RESCUE, null);
                 ParadoxAdvancements.grant(p, "broken_free");
-                p.sendSystemMessage(Component.literal("§d§l✦ IT IS OUT."));
-                p.sendSystemMessage(Component.literal(
-                        "§7Thin, and down to " + Math.max(1, ParadoxConfig.remnantFreedLives)
-                                + ". Take it back before it drifts off."));
+                p.sendSystemMessage(Component.literal("§d§l✦ IT IS OUT. §r§7Thin, and down to "
+                        + Math.max(1, ParadoxConfig.remnantFreedLives) + ". Take it back before it drifts off."));
             }
         }
         ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) vex).setAttached(OWNER_ID, null);
@@ -407,8 +405,7 @@ public final class Remnant {
                     16, 0.4, 0.4, 0.4, 0.05);
         }
         ParadoxAdvancements.grant(player, "the_thing_that_saved_you");
-        player.sendSystemMessage(Component.literal("§d§l✦ THE REMNANT STAYS WITH YOU."));
-        player.sendSystemMessage(Component.literal("§7It will stop your next §f"
+        player.sendSystemMessage(Component.literal("§d§l✦ THE REMNANT STAYS WITH YOU. §r§7It will stop your next §f"
                 + ParadoxConfig.remnantLives + "§7 death" + (ParadoxConfig.remnantLives == 1 ? "" : "s")
                 + " outright. No loop, no ghost - it simply will not let it happen."));
     }
@@ -449,17 +446,15 @@ public final class Remnant {
         if (left > 0) {
             setLives(vex, left);
             ParadoxAdvancements.grant(player, "it_takes_it_for_you");
-            player.sendSystemMessage(Component.literal("§d§l✦ THE REMNANT TAKES IT FOR YOU."));
             player.sendSystemMessage(Component.literal(
-                    "§7It dims a little. §f" + left + "§7 left."));
+                    "§d§l✦ THE REMNANT TAKES IT FOR YOU. §r§7It dims a little. §f" + left + "§7 left."));
         } else {
             poof(vex);
             release(player);
             ParadoxAdvancements.grant(player, "it_takes_it_for_you");
             ParadoxAdvancements.grant(player, "the_last_of_itself");
-            player.sendSystemMessage(Component.literal("§d§l✦ THE REMNANT SPENDS THE LAST OF ITSELF."));
-            player.sendSystemMessage(Component.literal(
-                    "§8It came out of a loop you closed once. Now it is gone, and you are still here."));
+            player.sendSystemMessage(Component.literal("§d§l✦ THE REMNANT SPENDS THE LAST OF ITSELF. §r§8It came "
+                    + "out of a loop you closed once. Now it is gone, and you are still here."));
         }
         return true;
     }
@@ -966,8 +961,6 @@ public final class Remnant {
                 caster.setCustomName(Component.literal("§5✦ Binder"));
                 caster.setCustomNameVisible(true);
                 player.sendSystemMessage(Component.literal("§5§lIT IS TAKEN AND CAGED."));
-                player.sendSystemMessage(Component.literal(
-                        "§8While it is caged, no other will come to you."));
                 imprison(sl, player, vex, caster);
                 return;   // it is caged and no longer theirs; nothing below applies to it
             }
@@ -1009,9 +1002,8 @@ public final class Remnant {
             vex.discard();
             release(player);
             ParadoxAdvancements.grant(player, "it_remembers");
-            player.sendSystemMessage(Component.literal("§8§lIT IS EATEN."));
             player.sendSystemMessage(Component.literal(
-                    "§8Every star at once. The warden does not take pieces."));
+                    "§8§lIT IS EATEN. §r§8Every star at once. The warden does not take pieces."));
         }
     }
 
