@@ -848,16 +848,29 @@ public final class Remnant {
         }
 
         // Villagers flee any Vex on sight - it is how they treat an evoker's swarm, and vanilla
-        // does not tell them apart from ours. Clear only the fear this specific Remnant caused;
-        // a real threat standing next to it still gets a real reaction.
+        // does not tell them apart from ours. NEAREST_HOSTILE, written by VillagerHostilesSensor,
+        // is the actual memory that drives it - clear only the fear this specific Remnant caused,
+        // so a real threat standing next to it still gets a real reaction. AVOID_TARGET is not a
+        // memory a plain Villager's brain registers at all (that crashed the server the first
+        // time this ran); hasMemoryValue is the safe way to ask "does this brain even track that
+        // memory" instead of finding out the hard way.
         for (Villager v : sl.getEntitiesOfClass(Villager.class, box, Villager::isAlive)) {
-            Brain<?> brain = v.getBrain();
-            if (brain.getMemory(MemoryModuleType.NEAREST_HOSTILE).filter(e -> e == vex).isPresent()) {
-                brain.eraseMemory(MemoryModuleType.NEAREST_HOSTILE);
-            }
-            if (brain.getMemory(MemoryModuleType.AVOID_TARGET).filter(e -> e == vex).isPresent()) {
-                brain.eraseMemory(MemoryModuleType.AVOID_TARGET);
-                brain.eraseMemory(MemoryModuleType.IS_PANICKING);
+            try {
+                Brain<?> brain = v.getBrain();
+                boolean fleeingThis = brain.hasMemoryValue(MemoryModuleType.NEAREST_HOSTILE)
+                        && brain.getMemory(MemoryModuleType.NEAREST_HOSTILE).filter(e -> e == vex).isPresent();
+                if (fleeingThis) {
+                    brain.eraseMemory(MemoryModuleType.NEAREST_HOSTILE);
+                    // Already mid-panic from an earlier tick: drop that too, or it keeps running
+                    // until the memory's own expiry even with nothing left to flee from.
+                    if (brain.hasMemoryValue(MemoryModuleType.IS_PANICKING)) {
+                        brain.eraseMemory(MemoryModuleType.IS_PANICKING);
+                    }
+                }
+            } catch (IllegalStateException e) {
+                // Some other mod's villager brain does not register this memory at all. Missing
+                // the fear-clear on this one villager is a shrug; crashing the whole server over
+                // it is not.
             }
         }
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.2 — fixed a hard crash near villagers
+
+- **Fixed: the game crashed to desktop whenever a bound Remnant got near a villager.** 1.1.1's
+  villager-panic fix read `MemoryModuleType.AVOID_TARGET` off the villager's brain to cancel a
+  flee reaction, but a plain Villager's brain never registers that memory at all — only
+  `NEAREST_HOSTILE` does, which is what `VillagerHostilesSensor` actually uses. Reading an
+  unregistered memory throws instead of returning empty, which took the whole server down.
+  Clearing sticks to `NEAREST_HOSTILE` (and, only if present, `IS_PANICKING`) now, both guarded
+  with `hasMemoryValue` and a try/catch, so a differently-configured brain from some other mod
+  can't do this again.
+- **1.1.1 is broken — update to 1.1.2 if you're on it.** The villager fix in that release is what
+  crashes the game; nothing else in 1.1.1 needs rolling back.
+
 ## 1.1.1 — hazard-specific Remnants, advancements, and a real icon
 
 - **The Remnant dreads, and colours itself, by the exact thing that killed you, not the broad
