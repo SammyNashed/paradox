@@ -79,6 +79,7 @@ No permissions required, so they work in a hardcore world with cheats off.
 | `/paradox status` | Recording buffer, current loop, Remnant state |
 | `/paradox test` | A dry run of the whole loop. **Cannot kill you**, even if the timer runs out |
 | `/paradox abort` | End a running loop harmlessly |
+| `/paradox selftest` | Diagnostic: verifies the skinned replica can be built and posed |
 | `/paradox reload` | Re-read the config file |
 
 ## Settings
