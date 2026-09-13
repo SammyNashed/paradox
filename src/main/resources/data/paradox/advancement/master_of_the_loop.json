@@ -1,0 +1,24 @@
+{
+  "parent": "paradox:first_rescue",
+  "criteria": {
+    "lava": { "trigger": "minecraft:impossible" },
+    "fire": { "trigger": "minecraft:impossible" },
+    "contact": { "trigger": "minecraft:impossible" },
+    "drown": { "trigger": "minecraft:impossible" },
+    "suffocate": { "trigger": "minecraft:impossible" },
+    "fall": { "trigger": "minecraft:impossible" },
+    "explosion": { "trigger": "minecraft:impossible" },
+    "mob": { "trigger": "minecraft:impossible" },
+    "generic": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.master_of_the_loop.description" },
+    "frame": "challenge",
+    "icon": { "id": "minecraft:nether_star" },
+    "title": { "translate": "advancements.paradox.master_of_the_loop.title" }
+  },
+  "requirements": [
+    [ "lava" ], [ "fire" ], [ "contact" ], [ "drown" ], [ "suffocate" ],
+    [ "fall" ], [ "explosion" ], [ "mob" ], [ "generic" ]
+  ]
+}

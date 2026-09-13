@@ -1,0 +1,13 @@
+{
+  "parent": "paradox:the_thing_that_saved_you",
+  "criteria": {
+    "caged": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.it_is_taken.description" },
+    "hidden": true,
+    "icon": { "id": "minecraft:iron_bars" },
+    "title": { "translate": "advancements.paradox.it_is_taken.title" }
+  },
+  "requirements": [ [ "caged" ] ]
+}

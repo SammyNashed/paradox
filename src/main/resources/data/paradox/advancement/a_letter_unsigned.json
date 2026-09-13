@@ -1,0 +1,12 @@
+{
+  "parent": "paradox:the_thing_that_saved_you",
+  "criteria": {
+    "read": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.a_letter_unsigned.description" },
+    "icon": { "id": "minecraft:written_book" },
+    "title": { "translate": "advancements.paradox.a_letter_unsigned.title" }
+  },
+  "requirements": [ [ "read" ] ]
+}

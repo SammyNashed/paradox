@@ -1,0 +1,12 @@
+{
+  "parent": "paradox:it_is_taken",
+  "criteria": {
+    "freed": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.broken_free.description" },
+    "icon": { "id": "minecraft:iron_bars" },
+    "title": { "translate": "advancements.paradox.broken_free.title" }
+  },
+  "requirements": [ [ "freed" ] ]
+}

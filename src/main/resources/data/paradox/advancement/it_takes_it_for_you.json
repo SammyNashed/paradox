@@ -1,0 +1,12 @@
+{
+  "parent": "paradox:the_thing_that_saved_you",
+  "criteria": {
+    "saved": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.it_takes_it_for_you.description" },
+    "icon": { "id": "minecraft:totem_of_undying" },
+    "title": { "translate": "advancements.paradox.it_takes_it_for_you.title" }
+  },
+  "requirements": [ [ "saved" ] ]
+}

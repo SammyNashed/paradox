@@ -1,0 +1,13 @@
+{
+  "parent": "paradox:first_rescue",
+  "criteria": {
+    "close": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.cutting_it_close.description" },
+    "hidden": true,
+    "icon": { "id": "minecraft:clock" },
+    "title": { "translate": "advancements.paradox.cutting_it_close.title" }
+  },
+  "requirements": [ [ "close" ] ]
+}

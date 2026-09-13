@@ -49,6 +49,7 @@ public final class Paradox implements ModInitializer {
     public void onInitialize() {
         ParadoxConfig.load();
         ParadoxSounds.init();
+        ParadoxItems.init();
         LOG.info("[paradox] armed - {}s window, unlimited={}", ParadoxConfig.recordSeconds, ParadoxConfig.unlimited);
 
         // 1. Keep a rolling record of everything that just happened to every player.
@@ -128,6 +129,7 @@ public final class Paradox implements ModInitializer {
                 }
                 session.begin(player);
                 SESSIONS.put(id, session);
+                ParadoxAdvancements.grant(player, "root");
                 LOG.info("[paradox] loop opened for {} ({})", player.getGameProfile().name(), session.kind());
                 return false;   // deny the death; the loop owns this player now
             } catch (Exception e) {
@@ -249,6 +251,7 @@ public final class Paradox implements ModInitializer {
                     s.markDryRun();          // MUST be set before begin(): this can never kill
                     s.begin(p);
                     SESSIONS.put(p.getUUID(), s);
+                    ParadoxAdvancements.grant(p, "dry_run");
                     ctx.getSource().sendSystemMessage(Component.literal(
                             "§e[paradox] dry run - you cannot die from this, even if the timer runs out"));
                     return 1;

@@ -1,0 +1,13 @@
+{
+  "parent": "paradox:root",
+  "criteria": {
+    "closed": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.the_loop_closes.description" },
+    "hidden": true,
+    "icon": { "id": "minecraft:wither_rose" },
+    "title": { "translate": "advancements.paradox.the_loop_closes.title" }
+  },
+  "requirements": [ [ "closed" ] ]
+}

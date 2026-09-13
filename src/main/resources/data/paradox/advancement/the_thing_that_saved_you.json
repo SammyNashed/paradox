@@ -1,0 +1,12 @@
+{
+  "parent": "paradox:something_pale",
+  "criteria": {
+    "bound": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.the_thing_that_saved_you.description" },
+    "icon": { "id": "paradox:remnant_sigil" },
+    "title": { "translate": "advancements.paradox.the_thing_that_saved_you.title" }
+  },
+  "requirements": [ [ "bound" ] ]
+}

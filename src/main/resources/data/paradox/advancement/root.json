@@ -1,0 +1,14 @@
+{
+  "criteria": {
+    "opened": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "background": "minecraft:gui/advancements/backgrounds/end",
+    "description": { "translate": "advancements.paradox.root.description" },
+    "icon": { "id": "minecraft:recovery_compass" },
+    "show_toast": false,
+    "title": { "translate": "advancements.paradox.root.title" }
+  },
+  "requirements": [ [ "opened" ] ]
+}

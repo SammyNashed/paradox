@@ -1,0 +1,13 @@
+{
+  "parent": "paradox:first_rescue",
+  "criteria": {
+    "glimpsed": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.something_pale.description" },
+    "hidden": true,
+    "icon": { "id": "minecraft:phantom_membrane" },
+    "title": { "translate": "advancements.paradox.something_pale.title" }
+  },
+  "requirements": [ [ "glimpsed" ] ]
+}

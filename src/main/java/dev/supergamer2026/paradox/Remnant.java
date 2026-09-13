@@ -3,12 +3,14 @@ package dev.supergamer2026.paradox;
 import com.mojang.serialization.Codec;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.animal.allay.Allay;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.illager.Evoker;
 import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.phys.Vec3;
@@ -165,8 +167,8 @@ public final class Remnant {
     }
 
     private static void setLives(Vex vex, int lives) {
-        vex.setCustomName(Component.literal("§d" + String.valueOf(PIP).repeat(Math.max(0, lives))
-                + " §7" + BOUND_NAME));
+        vex.setCustomName(Component.literal("§" + originColorCode(originOf(vex))
+                + String.valueOf(PIP).repeat(Math.max(0, lives)) + " §7" + BOUND_NAME));
         vex.setCustomNameVisible(true);
     }
 
@@ -185,7 +187,7 @@ public final class Remnant {
         vex.setGlowingTag(true);
         vex.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
         vex.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
-        vex.setCustomName(Component.literal("§d" + GLIMPSE_NAME));
+        vex.setCustomName(Component.literal("§" + originColorCode(origin) + GLIMPSE_NAME));
         vex.setCustomNameVisible(true);
         ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) vex).setAttached(ORIGIN, origin);
         level.addFreshEntity(vex);
@@ -223,6 +225,7 @@ public final class Remnant {
 
         release(player);
         ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player).setAttached(AWAITING_RESCUE, true);
+        ParadoxAdvancements.grant(player, "it_is_taken");
 
         sl.playSound(null, spot.getX(), spot.getY(), spot.getZ(),
                 SoundEvents.EVOKER_CAST_SPELL, SoundSource.HOSTILE, 1.2F, 0.7F);
@@ -312,7 +315,7 @@ public final class Remnant {
         ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) vex).setAttached(TRAPPED, null);
         ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) vex).setAttached(CAGE_AT, null);
         ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) vex).setAttached(BIND_LIVES, Math.max(1, ParadoxConfig.remnantFreedLives));
-        vex.setCustomName(Component.literal("§d" + GLIMPSE_NAME));
+        vex.setCustomName(Component.literal("§" + originColorCode(originOf(vex)) + GLIMPSE_NAME));
         vex.setCustomNameVisible(true);
         LINGER.put(vex, sl.getServer().getTickCount() + ParadoxConfig.remnantLingerSeconds * 20);
 
@@ -326,6 +329,7 @@ public final class Remnant {
             ServerPlayer p = sl.getServer().getPlayerList().getPlayer(UUID.fromString(owner));
             if (p != null) {
                 ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) p).setAttached(AWAITING_RESCUE, null);
+                ParadoxAdvancements.grant(p, "broken_free");
                 p.sendSystemMessage(Component.literal("§d§l✦ IT IS OUT."));
                 p.sendSystemMessage(Component.literal(
                         "§7Thin, and down to " + Math.max(1, ParadoxConfig.remnantFreedLives)
@@ -377,6 +381,7 @@ public final class Remnant {
             sl.sendParticles(ParticleTypes.HAPPY_VILLAGER, vex.getX(), vex.getY() + 0.4, vex.getZ(),
                     16, 0.4, 0.4, 0.4, 0.05);
         }
+        ParadoxAdvancements.grant(player, "the_thing_that_saved_you");
         player.sendSystemMessage(Component.literal("§d§l✦ THE REMNANT STAYS WITH YOU."));
         player.sendSystemMessage(Component.literal("§7It will stop your next §f"
                 + ParadoxConfig.remnantLives + "§7 death" + (ParadoxConfig.remnantLives == 1 ? "" : "s")
@@ -418,12 +423,15 @@ public final class Remnant {
 
         if (left > 0) {
             setLives(vex, left);
+            ParadoxAdvancements.grant(player, "it_takes_it_for_you");
             player.sendSystemMessage(Component.literal("§d§l✦ THE REMNANT TAKES IT FOR YOU."));
             player.sendSystemMessage(Component.literal(
                     "§7It dims a little. §f" + left + "§7 left."));
         } else {
             poof(vex);
             release(player);
+            ParadoxAdvancements.grant(player, "it_takes_it_for_you");
+            ParadoxAdvancements.grant(player, "the_last_of_itself");
             player.sendSystemMessage(Component.literal("§d§l✦ THE REMNANT SPENDS THE LAST OF ITSELF."));
             player.sendSystemMessage(Component.literal(
                     "§8It came out of a loop you closed once. Now it is gone, and you are still here."));
@@ -630,11 +638,66 @@ public final class Remnant {
     private static ParticleOptions originParticle(Vex vex) {
         String o = originOf(vex);
         if (o.startsWith("MOB")) return ParticleTypes.SOUL_FIRE_FLAME;
+        if (o.startsWith("CONTACT") || o.startsWith("SUFFOCATE") || o.equals("EXPLOSION")) {
+            return new DustParticleOptions(originDustColor(o), 1.0F);
+        }
         return switch (o) {
             case "LAVA", "FIRE" -> ParticleTypes.FLAME;
             case "DROWN" -> ParticleTypes.BUBBLE;
             case "FALL" -> ParticleTypes.CLOUD;
             default -> ParticleTypes.END_ROD;
+        };
+    }
+
+    /** The specific vanilla cause after the colon, or "" for an old save from before this mod
+     *  told hazard families apart, or a family (EXPLOSION, GENERIC) that carries none. */
+    private static String sub(String origin, String prefix) {
+        return origin.startsWith(prefix + ":") ? origin.substring(prefix.length() + 1) : "";
+    }
+
+    /** A colour for the name and its pips, so a glance says what kind of death made this one. */
+    private static char originColorCode(String origin) {
+        if (origin.startsWith("MOB:")) return '5';
+        if (origin.startsWith("CONTACT")) {
+            return switch (sub(origin, "CONTACT")) {
+                case "cactus" -> '2';
+                case "sweetBerryBush" -> '4';
+                case "stalagmite" -> '3';
+                case "wither" -> '8';
+                case "freeze" -> 'b';
+                default -> '6';                          // hotFloor, and an old un-suffixed save
+            };
+        }
+        if (origin.startsWith("SUFFOCATE")) return '8';
+        return switch (origin) {
+            case "LAVA", "FIRE" -> '6';
+            case "DROWN" -> '9';
+            case "FALL" -> '7';
+            case "EXPLOSION" -> 'c';
+            default -> 'd';                               // GENERIC, and anything not yet given one
+        };
+    }
+
+    /** The same story, as a tint for the dust trail on hazards with no particle of their own. */
+    private static int originDustColor(String origin) {
+        if (origin.startsWith("MOB:")) return 0x7A2E8C;
+        if (origin.startsWith("CONTACT")) {
+            return switch (sub(origin, "CONTACT")) {
+                case "cactus" -> 0x4C9A3A;
+                case "sweetBerryBush" -> 0x8B1E3F;
+                case "stalagmite" -> 0x6FA8C9;
+                case "wither" -> 0x3A3A28;
+                case "freeze" -> 0x9FE8FF;
+                default -> 0xFF5A1F;
+            };
+        }
+        if (origin.startsWith("SUFFOCATE")) return 0x4A4A4A;
+        return switch (origin) {
+            case "LAVA", "FIRE" -> 0xFF5A1F;
+            case "DROWN" -> 0x2E6FD9;
+            case "FALL" -> 0xB0B0B0;
+            case "EXPLOSION" -> 0xE0401A;
+            default -> 0xE0AFFF;
         };
     }
 
@@ -659,29 +722,75 @@ public final class Remnant {
             return found == null ? null : found.position();
         }
 
+        if (origin.startsWith("CONTACT")) {
+            return nearestHazardBlock(sl, at, contactHazard(sub(origin, "CONTACT")));
+        }
+
         return switch (origin) {
-            case "LAVA", "FIRE", "CONTACT", "GENERIC" -> nearestBadBlock(sl, at, origin);
+            case "LAVA", "FIRE", "GENERIC" -> nearestHazardBlock(sl, at, Remnant::isFireHazard);
             case "DROWN" -> sl.getBlockState(at.above()).getFluidState().getType() == Fluids.WATER
                     ? Vec3.atCenterOf(at.above()) : null;
             case "FALL" -> nearestLedge(sl, at);
-            default -> null;
+            case "EXPLOSION" -> nearestFuse(sl, player);
+            default -> origin.startsWith("SUFFOCATE") ? suffocationDread(sl, player, at) : null;
         };
     }
 
-    private static Vec3 nearestBadBlock(ServerLevel sl, BlockPos at, String origin) {
-        boolean fire = origin.equals("LAVA") || origin.equals("FIRE");
+    private static boolean isFireHazard(BlockState st) {
+        return st.getFluidState().getType() == Fluids.LAVA
+                || st.getFluidState().getType() == Fluids.FLOWING_LAVA
+                || st.is(Blocks.FIRE) || st.is(Blocks.SOUL_FIRE) || st.is(Blocks.MAGMA_BLOCK);
+    }
+
+    /** The one specific hazard that made this Remnant, so it beelines to a cactus and walks
+     *  straight past a sweet berry bush it has no reason to fear. An unrecognised or missing
+     *  sub-cause (an old save) falls back to the whole family, as it always did. */
+    private static java.util.function.Predicate<BlockState> contactHazard(String sub) {
+        return switch (sub) {
+            case "cactus" -> st -> st.is(Blocks.CACTUS);
+            case "sweetBerryBush" -> st -> st.is(Blocks.SWEET_BERRY_BUSH);
+            case "hotFloor" -> st -> st.is(Blocks.MAGMA_BLOCK);
+            case "freeze" -> st -> st.is(Blocks.POWDER_SNOW);
+            case "stalagmite" -> st -> st.is(Blocks.POINTED_DRIPSTONE);
+            case "wither" -> st -> st.is(Blocks.WITHER_ROSE);
+            default -> st -> st.is(Blocks.CACTUS) || st.is(Blocks.SWEET_BERRY_BUSH)
+                    || st.is(Blocks.POINTED_DRIPSTONE) || st.is(Blocks.WITHER_ROSE)
+                    || st.is(Blocks.POWDER_SNOW);
+        };
+    }
+
+    private static Vec3 nearestHazardBlock(ServerLevel sl, BlockPos at, java.util.function.Predicate<BlockState> match) {
         for (BlockPos p : BlockPos.betweenClosed(at.offset(-4, -3, -4), at.offset(4, 3, 4))) {
-            BlockState st = sl.getBlockState(p);
-            boolean match = fire
-                    ? (st.getFluidState().getType() == Fluids.LAVA
-                       || st.getFluidState().getType() == Fluids.FLOWING_LAVA
-                       || st.is(Blocks.FIRE) || st.is(Blocks.SOUL_FIRE) || st.is(Blocks.MAGMA_BLOCK))
-                    : (st.is(Blocks.CACTUS) || st.is(Blocks.SWEET_BERRY_BUSH)
-                       || st.is(Blocks.POINTED_DRIPSTONE) || st.is(Blocks.WITHER_ROSE)
-                       || st.is(Blocks.POWDER_SNOW));
-            if (match) return Vec3.atCenterOf(p);
+            if (match.test(sl.getBlockState(p))) return Vec3.atCenterOf(p);
         }
         return null;
+    }
+
+    /**
+     * "inWall": a solid block has actually formed where the player is standing right now - a
+     * piston, a falling block, a mistimed teleport. "cramming": too much living company sharing
+     * this exact square. Either way the danger is not somewhere nearby, it is the player's own
+     * block.
+     */
+    private static Vec3 suffocationDread(ServerLevel sl, ServerPlayer player, BlockPos at) {
+        if (sl.getBlockState(at).blocksMotion() || sl.getBlockState(at.above()).blocksMotion()) {
+            return Vec3.atCenterOf(at);
+        }
+        long crowd = sl.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(0.3))
+                .stream().filter(LivingEntity::isAlive).count();
+        return crowd > 12 ? player.position() : null;
+    }
+
+    /** No block outlives the blast that made it, so this one watches for a lit fuse instead. */
+    private static Vec3 nearestFuse(ServerLevel sl, ServerPlayer player) {
+        PrimedTnt found = null;
+        double best = Double.MAX_VALUE;
+        for (PrimedTnt t : sl.getEntitiesOfClass(PrimedTnt.class,
+                player.getBoundingBox().inflate(10.0), PrimedTnt::isAlive)) {
+            double d = t.distanceToSqr(player);
+            if (d < best) { best = d; found = t; }
+        }
+        return found == null ? null : found.position();
     }
 
     /** A drop of more than five blocks within a couple of steps counts as the thing it fears. */
@@ -753,6 +862,7 @@ public final class Remnant {
                     item.getItem().shrink(1);
                     if (item.getItem().isEmpty()) item.discard();
                     setLives(vex, lives + 1);
+                    ParadoxAdvancements.grant(player, "a_small_kindness");
                     sl.playSound(null, vex.getX(), vex.getY(), vex.getZ(),
                             ParadoxSounds.REMNANT_BIND, SoundSource.NEUTRAL, 0.9F, 1.3F);
                     sl.sendParticles(ParticleTypes.HAPPY_VILLAGER, vex.getX(), vex.getY() + 0.4, vex.getZ(),
@@ -859,6 +969,7 @@ public final class Remnant {
                     SoundSource.HOSTILE, 1.4F, 0.6F);
             vex.discard();
             release(player);
+            ParadoxAdvancements.grant(player, "it_remembers");
             player.sendSystemMessage(Component.literal("§8§lIT IS EATEN."));
             player.sendSystemMessage(Component.literal(
                     "§8Every star at once. The warden does not take pieces."));

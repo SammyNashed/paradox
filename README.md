@@ -8,7 +8,7 @@
 
 ![Minecraft 26.2](https://img.shields.io/badge/Minecraft-26.2-brightgreen)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-dbd0b4)
-![Version](https://img.shields.io/badge/Version-1.0.1-blue)
+![Version](https://img.shields.io/badge/Version-1.1.0-blue)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 </div>
@@ -49,13 +49,27 @@ outright — no loop, no ghost, it simply does not let them happen. It orbits yo
 darts out at hostile mobs and hovers over them, plants itself in front of your face when you are
 nearly dead, cheers when you win a fight, and refuses absolutely to harm an animal.
 
-It also remembers exactly how you died, and it cannot be calm about that one thing. A Remnant born
-from lava will put itself between you and every lava pool you ever walk past.
+It also remembers exactly how you died, and it cannot be calm about that one thing — and it colours
+itself by it. A Remnant born from a cactus goes green-starred and will beeline for the next one it
+finds; born from the cold it runs pale blue; from an evoker's wither rose, an ashen grey-black. It
+puts itself between you and the *exact* hazard that made it: not "fire" in general but the fall it
+watched you take, the powder snow, the pointed dripstone overhead, the lit TNT fuse it can feel
+ticking, even a wall closing in or a room getting too crowded to breathe in. Lava and mob deaths
+keep their own signature warmth or soul-fire.
 
 Others know what it is. **Vexes** will not fight it and it will not fight them — a swarm that should
 be shredding you simply stops. An **Allay** will give it back a life for an amethyst shard. An
 **Evoker** will try to take it, and if it succeeds it cages it in iron bars, and no other will come
 to you until you break it out. A **Warden** will eat it whole, and that one is permanent.
+
+## Advancements
+
+A hidden tree under **Paradox** tracks the things that happen to you, not things you go and fetch:
+closing your first loop, cutting it down to the wire, meeting a Remnant, reading its letter, feeding
+it to the last star, losing it to an Evoker and getting it back, an Allay's small kindness, a Warden
+that will never let it go — and a challenge-tier capstone for closing a loop against every kind of
+death the mod recognises at least once. Most of the interesting ones are hidden until earned, on
+purpose.
 
 ## Requirements
 

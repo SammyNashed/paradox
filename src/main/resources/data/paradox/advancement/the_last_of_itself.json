@@ -1,0 +1,14 @@
+{
+  "parent": "paradox:it_takes_it_for_you",
+  "criteria": {
+    "spent": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.the_last_of_itself.description" },
+    "frame": "goal",
+    "hidden": true,
+    "icon": { "id": "minecraft:soul_lantern" },
+    "title": { "translate": "advancements.paradox.the_last_of_itself.title" }
+  },
+  "requirements": [ [ "spent" ] ]
+}

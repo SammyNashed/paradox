@@ -82,15 +82,36 @@ public final class RemnantLetter {
             String article = "aeiou".indexOf(Character.toLowerCase(path.charAt(0))) >= 0 ? "An " : "A ";
             return article + path + ". It is still out there somewhere, and I have not forgotten it.";
         }
+        if (origin.startsWith("CONTACT")) {
+            return switch (sub(origin, "CONTACT")) {
+                case "cactus" -> "A cactus. Of everything that could have done it, it was that.";
+                case "sweetBerryBush" -> "Thorns. You barely felt the first one, and there is never only one.";
+                case "hotFloor" -> "The floor was stone until it was not. You found out on the way down.";
+                case "freeze" -> "The cold got into you before either of us noticed it had started.";
+                case "stalagmite" -> "Something came down out of the dark, on a single point, and you were under it.";
+                case "wither" -> "A flower that has no business being alive took you apart slowly.";
+                default -> "Something you brushed past. Small, and enough.";
+            };
+        }
+        if (origin.startsWith("SUFFOCATE")) {
+            return "cramming".equals(sub(origin, "SUFFOCATE"))
+                    ? "There got to be too many of something in too little room, and you were the one it did not spare."
+                    : "The world closed in on you and would not let go.";
+        }
         return switch (origin) {
             case "LAVA" -> "You went into the lava. I watched it close over you.";
             case "FIRE" -> "You burned. I could do nothing but count the seconds.";
             case "DROWN" -> "You drowned. It was quiet, and it took a long time.";
             case "FALL" -> "You fell. There was a moment where you knew, and then there was not.";
-            case "CONTACT" -> "Something you brushed past. Small, and enough.";
-            case "SUFFOCATE" -> "The world closed in on you and would not let go.";
+            case "EXPLOSION" -> "Something detonated near you. There was a sound, and then there was not enough of you left standing.";
             default -> "I could not tell you what it was. Only that it happened, and that I was there.";
         };
+    }
+
+    /** The specific vanilla cause after the colon - "cactus", "inWall" - or "" for an old save
+     *  from before this mod tracked it, or the label of a family with no favourite of its own. */
+    private static String sub(String origin, String prefix) {
+        return origin.startsWith(prefix + ":") ? origin.substring(prefix.length() + 1) : "";
     }
 
     private static Filterable<Component> page(String text) {
@@ -130,6 +151,7 @@ public final class RemnantLetter {
         if (EXPIRY.containsKey(player.getUUID())) return;
         EXPIRY.put(player.getUUID(), tick + 300);          // 15 seconds
         Remnant.delight(player, tick);
+        ParadoxAdvancements.grant(player, "a_letter_unsigned");
     }
 
     /** Take it back once it has been read. It was a one-time thing. */

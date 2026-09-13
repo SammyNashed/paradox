@@ -1,0 +1,13 @@
+{
+  "parent": "paradox:the_thing_that_saved_you",
+  "criteria": {
+    "gifted": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.a_small_kindness.description" },
+    "hidden": true,
+    "icon": { "id": "minecraft:amethyst_shard" },
+    "title": { "translate": "advancements.paradox.a_small_kindness.title" }
+  },
+  "requirements": [ [ "gifted" ] ]
+}

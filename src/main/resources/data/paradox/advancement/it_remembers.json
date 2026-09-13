@@ -1,0 +1,14 @@
+{
+  "parent": "paradox:the_thing_that_saved_you",
+  "criteria": {
+    "eaten": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.it_remembers.description" },
+    "frame": "challenge",
+    "hidden": true,
+    "icon": { "id": "minecraft:echo_shard" },
+    "title": { "translate": "advancements.paradox.it_remembers.title" }
+  },
+  "requirements": [ [ "eaten" ] ]
+}

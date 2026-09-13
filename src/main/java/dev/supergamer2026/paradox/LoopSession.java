@@ -47,6 +47,10 @@ public final class LoopSession {
 
     public enum Kind { LAVA, FIRE, CONTACT, DROWN, SUFFOCATE, FALL, MOB, EXPLOSION, GENERIC, UNPREVENTABLE }
 
+    /** The exact reason string an abort passes to {@link #resolve} - shared so resolve() can
+     *  tell "walked away on purpose" apart from an actual fix, without a flag of its own. */
+    public static final String ABORTED_REASON = "aborted by hand";
+
     /** How far around the death we look for the thing that actually did it. */
     private static final int HAZARD_SCAN = 2;
 
@@ -172,6 +176,31 @@ public final class LoopSession {
             case "outOfWorld", "starve", "genericKill" -> Kind.UNPREVENTABLE;
             default -> Kind.GENERIC;
         };
+    }
+
+    /**
+     * What a Remnant born from this death should dread, as a string it can carry through a
+     * reload. {@code MOB:<type>} only when the killer is something the dread-lookup can actually
+     * go looking for again - a living entity. TNT and an end crystal both explode and are gone,
+     * so labelling them {@code MOB:tnt} sent the Remnant hunting for a living entity of a type
+     * that will never appear; those fall back to a plain {@code EXPLOSION}, which watches for a
+     * lit fuse instead. {@code CONTACT} and {@code SUFFOCATE} keep the exact vanilla cause
+     * (cactus, freeze, inWall, cramming, ...) so the Remnant can dread that hazard specifically
+     * rather than the whole family of them.
+     */
+    private String origin() {
+        if (kind == Kind.MOB && killerType != null) {
+            return "MOB:" + net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(killerType);
+        }
+        if (kind == Kind.EXPLOSION) {
+            return killerEntity instanceof LivingEntity && killerType != null
+                    ? "MOB:" + net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(killerType)
+                    : "EXPLOSION";
+        }
+        if (kind == Kind.CONTACT || kind == Kind.SUFFOCATE) {
+            return kind.name() + ":" + causeLabel;
+        }
+        return kind.name();
     }
 
     /** Remember every hurting block near the death so we can check later that they are all gone. */
@@ -586,11 +615,9 @@ public final class LoopSession {
 
         if (glimpse && reliveTick == glimpseAt) {
             // Stamp it with the death that made it: that is what it will dread forever.
-            String origin = (kind == Kind.MOB || kind == Kind.EXPLOSION) && killerType != null
-                    ? "MOB:" + net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(killerType)
-                    : kind.name();
             Remnant.spawnGlimpse(level, player,
-                    journal.now() + ParadoxConfig.remnantLingerSeconds * 20, origin);
+                    journal.now() + ParadoxConfig.remnantLingerSeconds * 20, origin());
+            ParadoxAdvancements.grant(player, "something_pale");
             player.sendSystemMessage(Component.literal("§d§oSomething pale is standing there."));
             player.sendSystemMessage(Component.literal("§7Right-click it, quickly, before it goes."));
         }
@@ -645,6 +672,7 @@ public final class LoopSession {
         }
         finished = true;
         cleanup();
+        if (!dryRun) markRescued(player);
         player.setInvulnerable(false);
         player.removeEffect(MobEffects.INVISIBILITY);
         player.setInvisible(false);
@@ -679,6 +707,7 @@ public final class LoopSession {
         player.snapTo(deathPos.getX() + 0.5, deathPos.getY() + 0.1, deathPos.getZ() + 0.5);
 
         if (saved) {
+            if (!dryRun && !ABORTED_REASON.equals(why)) markRescued(player);
             player.setHealth(Math.min(ParadoxConfig.returnHealth, player.getMaxHealth()));
             player.setRemainingFireTicks(0);
             player.fallDistance = 0;
@@ -693,10 +722,18 @@ public final class LoopSession {
             player.sendSystemMessage(Component.literal(
                     "§7" + why + ", but this was a test. A real death here would have been permanent."));
         } else {
+            ParadoxAdvancements.grant(player, "the_loop_closes");
             player.sendSystemMessage(Component.literal("§4§l☠ THE LOOP CLOSED — §r§4" + why + "."));
             player.setHealth(1.0f);
             player.hurtServer(level, level.damageSources().genericKill(), Float.MAX_VALUE);
         }
+    }
+
+    /** A real cause was actually fixed - not a test, not a walk-away. */
+    private void markRescued(ServerPlayer player) {
+        ParadoxAdvancements.grant(player, "first_rescue");
+        if (ticksLeft <= 40) ParadoxAdvancements.grant(player, "cutting_it_close");
+        ParadoxAdvancements.grantCriterion(player, "master_of_the_loop", kind.name().toLowerCase());
     }
 
     public void cleanup() {

@@ -1,0 +1,12 @@
+{
+  "parent": "paradox:root",
+  "criteria": {
+    "tested": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.dry_run.description" },
+    "icon": { "id": "minecraft:clock" },
+    "title": { "translate": "advancements.paradox.dry_run.title" }
+  },
+  "requirements": [ [ "tested" ] ]
+}

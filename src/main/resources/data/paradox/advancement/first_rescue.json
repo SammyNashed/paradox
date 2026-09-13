@@ -1,0 +1,12 @@
+{
+  "parent": "paradox:root",
+  "criteria": {
+    "resolved": { "trigger": "minecraft:impossible" }
+  },
+  "display": {
+    "description": { "translate": "advancements.paradox.first_rescue.description" },
+    "icon": { "id": "minecraft:totem_of_undying" },
+    "title": { "translate": "advancements.paradox.first_rescue.title" }
+  },
+  "requirements": [ [ "resolved" ] ]
+}
