@@ -20,15 +20,19 @@
 - **The Remnant can no longer be farmed.** Loops were unlimited and a controlled death was close to
   risk-free, so the 8% roll could be repeated a dozen times in a few real minutes. Only the day's
   first eligible rescue gets a shot at it now, win or lose — real close calls are unaffected.
-- **Fixed: villagers panicked near a bound Remnant.** Vanilla's `VillagerHostilesSensor` can't tell
-  an evoker's Vex from yours. Cleared through `MemoryModuleType.NEAREST_HOSTILE` — the memory that
-  actually drives the flee reaction — guarded with `hasMemoryValue` and a try/catch so a
-  differently-shaped brain from another mod can't crash the server over it. A real threat standing
-  next to it still gets a real reaction.
+- **Fixed: villagers panicked near a bound Remnant, and the swarm truce with an evoker's own Vexes
+  could still land a hit.** Vanilla's `VillagerHostilesSensor` can't tell an evoker's Vex from
+  yours, and both truces were only re-checked every 10 ticks - long enough for a villager to run
+  a full panic cycle or a Vex to re-target and swing before the next correction ever saw it happen.
+  Both now run every tick instead. Villager fear clears through `MemoryModuleType.NEAREST_HOSTILE`
+  - the memory that actually drives the flee reaction - guarded with `hasMemoryValue` and a
+  try/catch so a differently-shaped brain from another mod can't crash the server over it. A real
+  threat standing next to either still gets a real reaction.
 - **The re-live's block placements used to just silently appear.** They now land one at a time, in
   the order you actually placed them, each with its own vanilla place/break sound.
-- Most paired chat messages are now a single message instead of two, so a rescue no longer floods
-  the chat log.
+- Most paired chat messages are now a single message instead of two, and a few purely decorative
+  ones were cut outright (an item drop and a letter crumbling already show you what's happening),
+  so a rescue no longer floods the chat log.
 - The Remnant has a real icon now — `paradox:remnant_sigil` — used on the advancement it's tied to.
 
 ## 1.0.1 — the Warden actually eats it

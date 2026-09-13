@@ -507,6 +507,10 @@ public final class Remnant {
             return;
         }
 
+        // Cheap, and adversarial: vanilla re-targets and re-panics every tick, so clearing it
+        // only every 10 ticks left a long enough gap for a Vex to land a hit or a villager to
+        // finish a full panic run before the next correction. This has to keep pace with it.
+        truce(sl, player, vex);
         if (tick % 10 == 0) kinAndPredators(sl, player, vex, mood, tick);
 
         // Anything that hurt the player in the last 12 seconds outranks a merely nearby hostile,
@@ -835,10 +839,16 @@ public final class Remnant {
      * Vexes will not fight it and it will not fight them. Evokers - the ones who bind Vexes in
      * the first place - try to take it back. Allays, which got out clean, can give it a life back.
      */
-    private static void kinAndPredators(ServerLevel sl, ServerPlayer player, Vex vex, Mood mood, int tick) {
+    /**
+     * The two truces that vanilla re-litigates every single tick, so they have to be re-won every
+     * single tick too. Ten ticks between corrections used to be enough of a gap for an evoker's
+     * Vex to re-acquire the player as a target and land a hit, or for a villager to finish an
+     * entire panic run, before the next check ever saw it happen.
+     */
+    private static void truce(ServerLevel sl, ServerPlayer player, Vex vex) {
         var box = player.getBoundingBox().inflate(16.0);
 
-        // Truce. A swarm that should be shredding you simply stops.
+        // A swarm that should be shredding you simply stops.
         for (Vex other : sl.getEntitiesOfClass(Vex.class, box, v -> v != vex && v.isAlive() && !isBound(v))) {
             if (other.getTarget() != null) {
                 other.setTarget(null);
@@ -873,6 +883,10 @@ public final class Remnant {
                 // it is not.
             }
         }
+    }
+
+    private static void kinAndPredators(ServerLevel sl, ServerPlayer player, Vex vex, Mood mood, int tick) {
+        var box = player.getBoundingBox().inflate(16.0);
 
         // The thing that eats what leaks between timelines. This is checked before anything
         // else it might be doing: a Warden in the room outranks evokers, allays and errands.
@@ -937,8 +951,6 @@ public final class Remnant {
         }
 
         if (mood.bindPressure == 0) {
-            player.sendSystemMessage(Component.literal(
-                    "§5It knows this one. It has been held before."));
             sl.playSound(null, caster.getX(), caster.getY(), caster.getZ(),
                     SoundEvents.EVOKER_PREPARE_ATTACK, SoundSource.HOSTILE, 1.0F, 1.0F);
         }

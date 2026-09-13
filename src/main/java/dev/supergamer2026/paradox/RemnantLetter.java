@@ -143,7 +143,6 @@ public final class RemnantLetter {
                 ParadoxSounds.REMNANT_CHEER, SoundSource.NEUTRAL, 0.8F, 1.3F);
         level.sendParticles(ParticleTypes.END_ROD,
                 carrier.getX(), carrier.getY(), carrier.getZ(), 10, 0.2, 0.2, 0.2, 0.02);
-        player.sendSystemMessage(Component.literal("§7It drops something at your feet."));
     }
 
     /** They opened it. Start the clock, and let the Remnant enjoy itself. */
@@ -170,7 +169,6 @@ public final class RemnantLetter {
                     sl.playSound(null, player.getX(), player.getY(), player.getZ(),
                             ParadoxSounds.REMNANT_FADE, SoundSource.NEUTRAL, 0.6F, 1.4F);
                 }
-                player.sendSystemMessage(Component.literal("§8The letter comes apart in your hands."));
                 return;
             }
         }
