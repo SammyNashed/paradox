@@ -93,6 +93,28 @@ public final class Remnant {
     public static final AttachmentType<String> OWNER_ID = AttachmentRegistry.createPersistent(
             Identifier.fromNamespaceAndPath(Paradox.MOD_ID, "owner_id"), Codec.STRING);
 
+    /**
+     * The in-game day a player last rolled the dice on a rescue leaving a Remnant behind. Loops
+     * are unlimited and a controlled death is cheap to arrange - fall damage with a hay bale
+     * waiting is close to risk-free - so without this, a patient player could farm the roll a
+     * dozen times in a few real minutes instead of ever actually earning it. One shot at it per
+     * in-game day, whether or not that shot pays off, closes that off without touching how many
+     * times a real close call can be survived.
+     */
+    public static final AttachmentType<Long> LAST_ROLL_DAY = AttachmentRegistry.createPersistent(
+            Identifier.fromNamespaceAndPath(Paradox.MOD_ID, "last_roll_day"), Codec.LONG);
+
+    /** True the first time this in-game day a rescue has gotten far enough to consider a roll. */
+    public static boolean rollEligible(ServerPlayer player, long day) {
+        Long last = ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player).getAttached(LAST_ROLL_DAY);
+        return last == null || last != day;
+    }
+
+    /** The day's shot is spent - win or lose. */
+    public static void markRolled(ServerPlayer player, long day) {
+        ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player).setAttached(LAST_ROLL_DAY, day);
+    }
+
     private static final Map<UUID, Vex> BOUND = new HashMap<>();
     private static final Map<Vex, Integer> LINGER = new HashMap<>();
     private static final Map<UUID, Mood> MOODS = new HashMap<>();

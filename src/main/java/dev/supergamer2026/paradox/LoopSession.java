@@ -555,10 +555,14 @@ public final class LoopSession {
 
         // Nothing new comes loose while an evoker is still holding the last one. Without this,
         // dying repeatedly is a cheaper route to a fresh three-life Remnant than a rescue.
-        this.glimpse = !dryRun && ParadoxConfig.remnantEnabled
+        boolean eligible = !dryRun && ParadoxConfig.remnantEnabled
                 && !Remnant.awaitingRescue(player)
-                && !Remnant.hasAny(player)
-                && level.getRandom().nextDouble() < ParadoxConfig.remnantChance;
+                && !Remnant.hasAny(player);
+        // And only the day's first eligible rescue gets a shot at all - see Remnant.LAST_ROLL_DAY.
+        long day = level.getLevelData().getGameTime() / 24000L;
+        boolean rollsToday = eligible && Remnant.rollEligible(player, day);
+        this.glimpse = rollsToday && level.getRandom().nextDouble() < ParadoxConfig.remnantChance;
+        if (rollsToday) Remnant.markRolled(player, day);
         this.heldElsewhere = !dryRun && Remnant.awaitingRescue(player);
         this.glimpseAt = Math.max(5, reliveTicks - 30);
 

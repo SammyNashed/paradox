@@ -42,7 +42,9 @@ If the clock runs out with the cause unfixed, the loop closes and the death is r
 
 ## The Remnant
 
-Rarely, a rescue leaves something behind: a pale spirit that does not go back.
+Rarely, a rescue leaves something behind: a pale spirit that does not go back. Only the first
+eligible rescue each in-game day gets a shot at it, win or lose — the world only sheds so often,
+and it isn't something a controlled death in a hole can be farmed for.
 
 It carries a letter to you before it draws its sword, and it will take your **next three deaths**
 outright — no loop, no ghost, it simply does not let them happen. It orbits your shoulder, hums,
