@@ -1,18 +1,5 @@
 # Changelog
 
-## 1.1.2 — fixed a hard crash near villagers
-
-- **Fixed: the game crashed to desktop whenever a bound Remnant got near a villager.** 1.1.1's
-  villager-panic fix read `MemoryModuleType.AVOID_TARGET` off the villager's brain to cancel a
-  flee reaction, but a plain Villager's brain never registers that memory at all — only
-  `NEAREST_HOSTILE` does, which is what `VillagerHostilesSensor` actually uses. Reading an
-  unregistered memory throws instead of returning empty, which took the whole server down.
-  Clearing sticks to `NEAREST_HOSTILE` (and, only if present, `IS_PANICKING`) now, both guarded
-  with `hasMemoryValue` and a try/catch, so a differently-configured brain from some other mod
-  can't do this again.
-- **1.1.1 is broken — update to 1.1.2 if you're on it.** The villager fix in that release is what
-  crashes the game; nothing else in 1.1.1 needs rolling back.
-
 ## 1.1.1 — hazard-specific Remnants, advancements, and a real icon
 
 - **The Remnant dreads, and colours itself, by the exact thing that killed you, not the broad
@@ -34,7 +21,10 @@
   risk-free, so the 8% roll could be repeated a dozen times in a few real minutes. Only the day's
   first eligible rescue gets a shot at it now, win or lose — real close calls are unaffected.
 - **Fixed: villagers panicked near a bound Remnant.** Vanilla's `VillagerHostilesSensor` can't tell
-  an evoker's Vex from yours. A real threat standing next to it still gets a real reaction.
+  an evoker's Vex from yours. Cleared through `MemoryModuleType.NEAREST_HOSTILE` — the memory that
+  actually drives the flee reaction — guarded with `hasMemoryValue` and a try/catch so a
+  differently-shaped brain from another mod can't crash the server over it. A real threat standing
+  next to it still gets a real reaction.
 - **The re-live's block placements used to just silently appear.** They now land one at a time, in
   the order you actually placed them, each with its own vanilla place/break sound.
 - Most paired chat messages are now a single message instead of two, so a rescue no longer floods
