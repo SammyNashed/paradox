@@ -4,74 +4,56 @@
 
 # Paradox
 
-**You do not die. You get one shot at stopping it.**
-
 ![Minecraft 26.2](https://img.shields.io/badge/Minecraft-26.2-brightgreen)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-dbd0b4)
-![Version](https://img.shields.io/badge/Version-1.1.1-blue)
+![Version](https://img.shields.io/badge/Version-1.1.3-blue)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 </div>
 
-A hardcore-survival mod for Minecraft that turns dying into a puzzle you are given one chance to
-solve.
+Hardcore mod for Fabric. When you die, you get one chance to go back and stop it from happening.
 
----
+## How it works
 
-## What happens when you die
+You die, but the death gets paused. Your items stay safe and you turn into a ghost that can fly and can't take damage.
 
-The killing blow is **suspended**. Your inventory goes into escrow, so nothing hits the ground — no
-more losing a netherite kit to a mistimed jump. You are cast out of your body as a small pale
-spirit: flying, invulnerable, breaking blocks instantly, carrying a curated kit of water buckets,
-obsidian, hay and a sword.
+A copy of you replays the last few seconds before you died, next to whatever killed you, so you can see what happened. The boss bar at the top tells you what to do and how much time you have left (30 seconds by default).
 
-Beside you, a replica of yourself **wearing your own skin** re-enacts the last six seconds of your
-life on a loop, alongside whatever killed you. A marker sits on the exact block where you died.
+What you have to do depends on how you died:
 
-You have **sixty seconds**. Dump water on the lava. Break the cactus. Kill the thing that was about
-to kill you. The world is re-judged every single tick, so the instant the cause is gone you are
-pulled back into your body.
+- mob or creeper: kill it
+- lava: get the lava out of the spot you died in
+- fire: put it out
+- cactus, berry bush, magma, dripstone, wither rose, powder snow: break it
+- drowning: make an air pocket
+- stuck in a wall: clear the block
+- fall: put water, hay, slime or a cobweb where you landed
 
-Then the world **winds backwards twelve seconds** and drops you in, alive, to play those seconds
-again — while the work your ghost did replays itself around you on schedule. Obsidian places itself.
-The creature that killed you is struck three times by nothing at all and dies.
+The void, starving and /kill can't be saved.
 
-You never meet your rescuer, because it was you.
+Once you fix it, the world rewinds 12 seconds and you're back in your body. You play those seconds again, and the blocks your ghost placed or broke come back at the same moments you did them. If a mob killed you, something invisible hits it 3 times and it dies (that's your ghost).
 
-If the clock runs out with the cause unfixed, the loop closes and the death is real.
+If the timer runs out, you die for real.
 
-## The Remnant
+## Remnant
 
-Rarely, a rescue leaves something behind: a pale spirit that does not go back. Only the first
-eligible rescue each in-game day gets a shot at it, win or lose — the world only sheds so often,
-and it isn't something a controlled death in a hole can be farmed for.
+Sometimes a rescue leaves a Remnant behind. It's a small pale vex, right-click it to keep it. 8% chance, and only your first rescue each in-game day can roll it.
 
-It carries a letter to you before it draws its sword, and it will take your **next three deaths**
-outright — no loop, no ghost, it simply does not let them happen. It orbits your shoulder, hums,
-darts out at hostile mobs and hovers over them, plants itself in front of your face when you are
-nearly dead, cheers when you win a fight, and refuses absolutely to harm an animal.
+- takes your next 3 deaths for you, no loop needed. the stars over its head are its lives
+- follows you around and attacks hostile mobs, never animals
+- its color depends on how you died, and it watches out for that exact thing
+- leaves you a letter
 
-It also remembers exactly how you died, and it cannot be calm about that one thing — and it colours
-itself by it. A Remnant born from a cactus goes green-starred and will beeline for the next one it
-finds; born from the cold it runs pale blue; from an evoker's wither rose, an ashen grey-black. It
-puts itself between you and the *exact* hazard that made it: not "fire" in general but the fall it
-watched you take, the powder snow, the pointed dripstone overhead, the lit TNT fuse it can feel
-ticking, even a wall closing in or a room getting too crowded to breathe in. Lava and mob deaths
-keep their own signature warmth or soul-fire.
+Some mobs react to it:
 
-Others know what it is. **Vexes** will not fight it and it will not fight them — a swarm that should
-be shredding you simply stops. An **Allay** will give it back a life for an amethyst shard. An
-**Evoker** will try to take it, and if it succeeds it cages it in iron bars, and no other will come
-to you until you break it out. A **Warden** will eat it whole, and that one is permanent.
+- vexes won't fight it
+- an allay gives it a life back if you give the allay an amethyst shard
+- an evoker can steal its lives and lock it in a cage. break the bars or kill the evoker to get it back
+- a warden eats it, and that's permanent
 
 ## Advancements
 
-A hidden tree under **Paradox** tracks the things that happen to you, not things you go and fetch:
-closing your first loop, cutting it down to the wire, meeting a Remnant, reading its letter, feeding
-it to the last star, losing it to an Evoker and getting it back, an Allay's small kindness, a Warden
-that will never let it go — and a challenge-tier capstone for closing a loop against every kind of
-death the mod recognises at least once. Most of the interesting ones are hidden until earned, on
-purpose.
+15 of them, most are hidden until you get them.
 
 ## Requirements
 
@@ -80,45 +62,45 @@ purpose.
 | Minecraft | 26.2 (Java Edition) |
 | Loader | [Fabric](https://fabricmc.net/) |
 | Required | [Fabric API](https://modrinth.com/mod/fabric-api) 0.149.0 or newer |
-| Optional | [Mod Menu](https://modrinth.com/mod/modmenu) + [Cloth Config](https://modrinth.com/mod/cloth-config) — in-game settings screen |
-| Java | 21+ (Minecraft 26.2 itself needs 25) |
+| Optional | [Mod Menu](https://modrinth.com/mod/modmenu) + [Cloth Config](https://modrinth.com/mod/cloth-config) for the settings screen |
 
-Single-player worlds. The rewind is not safe to inflict on other players, so it stands down when
-more than one is online.
+Hardcore only by default. Turn on `survivalWorlds` if you want it in survival too.
+
+Single player only. It turns itself off when more than one player is online.
 
 ## Commands
 
-No permissions required, so they work in a hardcore world with cheats off.
+None of these need cheats, so they work in hardcore.
 
-| Command | Does |
+| Command | |
 |---|---|
-| `/paradox status` | Recording buffer, current loop, Remnant state |
-| `/paradox test` | A dry run of the whole loop. **Cannot kill you**, even if the timer runs out |
-| `/paradox abort` | End a running loop harmlessly |
-| `/paradox selftest` | Diagnostic: verifies the skinned replica can be built and posed |
-| `/paradox reload` | Re-read the config file |
+| `/paradox status` | shows what the mod is recording and your Remnant |
+| `/paradox test` | practice run, it can't kill you even if time runs out |
+| `/paradox abort` | ends a running loop |
+| `/paradox selftest` | checks that the copy of you can be created |
+| `/paradox reload` | reloads the config |
 
 ## Settings
 
-Mod Menu → Paradox, or `config/paradox.properties`. The useful ones:
+In Mod Menu, or `config/paradox.properties`.
 
 | Setting | Default | |
 |---|---|---|
-| `interventionSeconds` | 60 | Your clock as a ghost |
-| `replayWindowSeconds` | 6 | How much of the run-up replays |
-| `rewindSeconds` | 12 | How far back you are put to carry on from |
-| `rewindEnabled` | true | Off: you are simply saved where you stand |
-| `reliveInvulnerable` | true | Nothing can undo your rescue during the re-live |
-| `remnantChance` | 0.08 | Chance of a Remnant after a successful rescue |
-| `remnantLives` | 3 | Deaths a Remnant will take for you |
+| `interventionSeconds` | 30 | ghost timer |
+| `replayWindowSeconds` | 6 | how much of your death gets replayed |
+| `rewindSeconds` | 12 | how far back the rewind goes |
+| `rewindEnabled` | true | off = you just get saved where you are, no replay |
+| `reliveInvulnerable` | true | you can't get hurt while replaying |
+| `survivalWorlds` | false | also works in survival worlds |
+| `remnantChance` | 0.08 | Remnant chance (1.0 = every time, for testing) |
+| `remnantLives` | 3 | how many deaths a Remnant takes |
 
 ## Building
 
-No Gradle, no Loom. Minecraft 26.x ships deobfuscated, so this compiles directly against the game
-jar with `javac`:
+No Gradle. 26.x isn't obfuscated, so it builds with plain javac:
 
 ```bash
 bash build.sh
 ```
 
-Licensed MIT.
+MIT license.
