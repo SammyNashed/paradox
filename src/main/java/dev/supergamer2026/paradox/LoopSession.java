@@ -2,8 +2,13 @@ package dev.supergamer2026.paradox;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
+import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
@@ -16,6 +21,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
@@ -90,11 +96,20 @@ public final class LoopSession {
     /** What the ghost changed, to be re-applied on schedule while the player lives it. */
     private List<BlockJournal.Change> script = List.of();
     private int[] scriptAt = new int[0];
+    /** An explosion's crater, held back from the script so it can go off as ONE blast instead of being dug out block by block. */
+    private List<BlockJournal.Change> burst = List.of();
+    private boolean burstFired = false;
+    private boolean killLanded = false;
+    /** "You lived" goes up the moment the danger is gone, not when the re-live runs out. */
+    private boolean livedShown = false;
     private int scriptCursor = 0;
     private int reliveTick = 0;
     private int reliveTicks = 0;
     private Mob revived;                 // what dies on cue during the re-live
     private int scheduledKillTick = -1;
+    /** Where along the killer's recorded route the ghost actually killed it, so the re-live can match. */
+    private int replayKi = -1;
+    private int killKi = -1;
     /** The actual thing that killed them. Usually still alive - it won, after all. */
     private Entity killerEntity;
     private boolean striking = false;
@@ -109,6 +124,9 @@ public final class LoopSession {
     private ArmorStand marker;
     private Mob phantom;
     private Vex ghostBody;
+    /** The ghost's clock. Its name is the goal, and it is the only text on screen. */
+    private ServerBossEvent bar;
+    private String barGoal;
 
     // --- the real life, held in escrow -----------------------------------------------
     private final ItemStack[] stashedInventory;
@@ -244,6 +262,7 @@ public final class LoopSession {
         player.fallDistance = 0;
         player.getFoodData().setFoodLevel(20);
 
+        Recovery.hold(player, stashedGameMode, stashedInventory, stashedFood, stashedXpLevel, stashedXpProgress);
         player.getInventory().clearContent();
         player.setGameMode(GameType.CREATIVE);
         player.setInvulnerable(true);
@@ -261,24 +280,39 @@ public final class LoopSession {
 
         spawnHolograms(player);
 
-        player.sendSystemMessage(Component.literal("§c§l☠ YOU DIED — §r§cbut not yet.\n§7Killed by §f"
-                + causeLabel + "§7 at §f" + deathPos.getX() + " " + deathPos.getY() + " " + deathPos.getZ()
-                + "§7. Gear held safe."));
-        player.sendSystemMessage(Component.literal("§b" + objective()
-                + "\n§8The replay loops on fast-forward. Fix it and you snap back the moment you do."));
+        // No words for the death itself: the screen dips dark, a heavy beat, and the clock appears.
+        player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 40, 0, false, false, false));
+        playTo(player, ParadoxSounds.LOOP_DEATH);
+        this.barGoal = goal();
+        this.bar = new ServerBossEvent(UUID.randomUUID(), Component.literal(barGoal),
+                BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.PROGRESS);
+        bar.addPlayer(player);
     }
 
-    /** Plain English for what the player has to actually accomplish. */
-    private String objective() {
+    private void playTo(ServerPlayer player, net.minecraft.sounds.SoundEvent sound) {
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), sound, SoundSource.PLAYERS, 1.0F, 1.0F);
+    }
+
+    /** Big centre-screen text instead of chat. */
+    static void title(ServerPlayer player, String title, String subtitle, int stay) {
+        player.connection.send(new ClientboundSetTitlesAnimationPacket(5, stay, 15));
+        player.connection.send(new ClientboundSetSubtitleTextPacket(Component.literal(subtitle)));
+        player.connection.send(new ClientboundSetTitleTextPacket(Component.literal(title)));
+    }
+
+    /** What the player has to do, short enough to sit on a boss bar. */
+    private String goal() {
         return switch (kind) {
-            case LAVA -> "Get rid of the lava around the marker.";
-            case FIRE -> "Put the fire out around the marker.";
-            case CONTACT -> "Break whatever is hurting you near the marker (" + hazards.size() + " found).";
-            case DROWN -> "Make an air pocket at the marker.";
-            case SUFFOCATE -> "Clear the block at the marker.";
-            case FALL -> "Put water or hay where you land.";
-            case MOB, EXPLOSION -> "Kill the thing that killed you.";
-            default -> "Change whatever it was that got you.";
+            case LAVA -> "Get rid of the lava";
+            case FIRE -> "Put out the fire";
+            case CONTACT -> "Break what hurt you (" + hazardsRemaining() + " left)";
+            case DROWN -> "Make an air pocket";
+            case SUFFOCATE -> "Clear the block you're stuck in";
+            case FALL -> "Put water or hay where you land";
+            case MOB, EXPLOSION -> killerType != null
+                    ? "Kill the " + killerType.getDescription().getString()
+                    : "Kill what killed you";
+            default -> "Change what killed you";
         };
     }
 
@@ -307,10 +341,6 @@ public final class LoopSession {
             pastSelf.spawn(f.x(), f.y(), f.z(), f.yaw(), f.pitch());
         }
 
-        // A fixed marker on the spot, so you know where to work.
-        this.marker = Avatars.markerStand(level, deathPos.getX() + 0.5, deathPos.getY(), deathPos.getZ() + 0.5,
-                "§c☠ it happens here");
-
         if (killerType != null) {
             Entity e = killerType.create(level, EntitySpawnReason.MOB_SUMMONED);
             if (e instanceof Mob mob) {
@@ -323,8 +353,6 @@ public final class LoopSession {
                 mob.setNoAi(true);              // harmless: it is a memory, not a threat
                 mob.setSilent(true);
                 mob.setGlowingTag(true);
-                mob.setCustomName(Component.literal("§c☠ what killed you"));
-                mob.setCustomNameVisible(true);
                 mob.setPersistenceRequired();
                 level.addFreshEntity(mob);
                 this.phantom = mob;
@@ -371,12 +399,28 @@ public final class LoopSession {
             return true;
         }
 
-        if (ticksLeft % 4 == 0) {
-            double secs = ticksLeft / 20.0;
-            player.sendSystemMessage(Component.literal(
-                    String.format("%s §f%.1fs §8| §c%s", timeBar(), secs, shortObjective())), true);
+        // The death spot is marked by a column of soul fire, not a label.
+        if (ticksLeft % 5 == 0) {
+            level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME,
+                    deathPos.getX() + 0.5, deathPos.getY() + 1.0, deathPos.getZ() + 0.5, 8, 0.12, 1.0, 0.12, 0.01);
         }
+        updateBar(player);
         return false;
+    }
+
+    private void updateBar(ServerPlayer player) {
+        if (bar == null) return;
+        bar.setProgress(Math.max(0F, Math.min(1F, (float) ticksLeft / ParadoxConfig.interventionTicks())));
+        String goal = goal();
+        if (!goal.equals(barGoal)) {
+            barGoal = goal;
+            bar.setName(Component.literal(goal));
+        }
+        // Last five seconds: the bar goes red and a heartbeat counts them down.
+        if (ticksLeft <= 100) {
+            bar.setColor(BossEvent.BossBarColor.RED);
+            if (ticksLeft % 20 == 0) playTo(player, ParadoxSounds.LOOP_HEARTBEAT);
+        }
     }
 
     /** The replay is a briefing: fast, and it loops so you can keep re-watching while you work. */
@@ -396,28 +440,9 @@ public final class LoopSession {
                 Recorder.Track t = killerTrack.get(ki);
                 phantom.snapTo(t.x(), t.y(), t.z());
                 phantom.setYRot(t.yaw());
+                replayKi = ki;
             }
         }
-    }
-
-    private String timeBar() {
-        int width = 20;
-        int total = ParadoxConfig.interventionTicks();
-        int filled = Math.max(0, Math.min(width, (int) ((double) ticksLeft / total * width)));
-        return "§a" + "|".repeat(filled) + "§8" + "|".repeat(width - filled);
-    }
-
-    private String shortObjective() {
-        return switch (kind) {
-            case LAVA -> "lava still there";
-            case FIRE -> "still burning";
-            case CONTACT -> hazardsRemaining() + " hazard(s) left";
-            case DROWN -> "still underwater";
-            case SUFFOCATE -> "still walled in";
-            case FALL -> "nothing to land on";
-            case MOB, EXPLOSION -> "it still lives";
-            default -> "nothing changed yet";
-        };
     }
 
     private int hazardsRemaining() {
@@ -446,6 +471,12 @@ public final class LoopSession {
 
             case SUFFOCATE -> !now.blocksMotion();
 
+            // If you died standing in lava, only that spot counts. Requiring every lava block nearby to go meant
+            // fighting the flow from a source you never touched.
+            case LAVA -> isHazard(deathBlock)
+                    ? !isHazard(now) && !isHazard(level.getBlockState(deathPos.above()))
+                    : hazards.isEmpty() ? worldChanged() : hazardsClear();
+
             // Lava, fire, cactus, berries, magma, dripstone and anything unmodelled all reduce to
             // the same question: is the thing that hurt you still there?
             default -> hazards.isEmpty() ? worldChanged() : hazardsClear();
@@ -466,14 +497,14 @@ public final class LoopSession {
     private String verdictReason(boolean saved) {
         if (saved) {
             return switch (kind) {
-                case LAVA -> "the lava is gone";
-                case FIRE -> "the fire is out";
+                case LAVA -> "lava's gone";
+                case FIRE -> "fire's out";
                 case CONTACT -> "you cleared it";
-                case DROWN -> "there is air to breathe";
-                case SUFFOCATE -> "the way is open";
-                case FALL -> "something broke the fall";
-                case MOB, EXPLOSION -> "the thing that killed you is dead";
-                default -> "you changed what was there";
+                case DROWN -> "you can breathe";
+                case SUFFOCATE -> "you're free";
+                case FALL -> "fall broken";
+                case MOB, EXPLOSION -> "it's dead";
+                default -> "you changed it";
             };
         }
         return "time ran out";
@@ -490,8 +521,12 @@ public final class LoopSession {
      * hear the thing that killed them die, and they never see who did it, because it was them.
      */
     private void beginRelive(ServerPlayer player) {
+        killKi = replayKi;               // the phantom is dead, so this is where it fell
         // Grab the ghost's work BEFORE unwinding it - reverting past the death removes it.
+        // The journal only diffs every few ticks, so catch up first or the last edits are lost.
+        journal.flush(level);
         this.script = journal.changesSince(deathTick);
+        splitBurst();
         int reverted = journal.revertTo(level, windowStartTick);
 
         cleanup();                       // vex, replica, phantom and marker all go
@@ -510,6 +545,7 @@ public final class LoopSession {
         player.getAbilities().flying = false;
         player.getAbilities().mayfly = false;
         player.onUpdateAbilities();
+        Recovery.releaseStash(player);   // the real inventory is in their hands again
 
         int rewindFrom = Math.max(0, frames.size() - ParadoxConfig.rewindTicks());
         Recorder.Frame f = frames.get(Math.min(rewindFrom, frames.size() - 1));
@@ -547,8 +583,19 @@ public final class LoopSession {
                     this.revived = mob;
                 }
             }
-            if (revived != null) this.scheduledKillTick = Math.max(5, reliveTicks - 45);
+            if (revived != null) {
+                if (followsTrack()) {
+                    // Walk the route it really took and fall where the ghost dropped it. Its own AI
+                    // would beeline at you and the kill would land somewhere you never saw.
+                    revived.setNoAi(true);
+                    int killTick = reliveTicks - (killerTrack.size() - killKi);
+                    this.scheduledKillTick = Math.max(5, Math.min(reliveTicks - 5, killTick - 10));
+                } else {
+                    this.scheduledKillTick = Math.max(5, reliveTicks - 45);
+                }
+            }
         }
+        sweepStrays("relive start");
 
         // Nothing new comes loose while an evoker is still holding the last one. Without this,
         // dying repeatedly is a cheaper route to a fresh three-life Remnant than a rescue.
@@ -557,17 +604,22 @@ public final class LoopSession {
                 && !Remnant.hasAny(player);
         // And only the day's first eligible rescue gets a shot at all - see Remnant.LAST_ROLL_DAY.
         long day = level.getLevelData().getGameTime() / 24000L;
-        boolean rollsToday = eligible && Remnant.rollEligible(player, day);
+        // A chance of 1.0 is the testing setting, so it skips the once-a-day limit.
+        boolean testing = ParadoxConfig.remnantChance >= 1.0;
+        boolean rollsToday = eligible && (testing || Remnant.rollEligible(player, day));
         this.glimpse = rollsToday && level.getRandom().nextDouble() < ParadoxConfig.remnantChance;
-        if (rollsToday) Remnant.markRolled(player, day);
+        if (rollsToday && !testing) Remnant.markRolled(player, day);
         this.heldElsewhere = !dryRun && Remnant.awaitingRescue(player);
         this.glimpseAt = Math.max(5, reliveTicks - 30);
 
         this.phase = Phase.RELIVE;
         this.reliveTick = 0;
 
-        player.sendSystemMessage(Component.literal("§d§l↻ REWOUND — §r§d" + (reliveTicks / 20) + " seconds back.\n§7"
-                + reverted + " block(s) put back. Live it again - something is looking after you."));
+        // The rewind is felt, not read: a blink, a pull of sound, the air folding back in.
+        player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 12, 0, false, false, false));
+        playTo(player, ParadoxSounds.LOOP_REWIND);
+        level.sendParticles(ParticleTypes.REVERSE_PORTAL,
+                player.getX(), player.getY() + 1.0, player.getZ(), 80, 0.6, 1.0, 0.6, 0.05);
     }
 
     /** How many ticks apart consecutive placements must land, so a handful of blocks placed in
@@ -607,6 +659,16 @@ public final class LoopSession {
             applyChange(script.get(scriptCursor++));
         }
 
+        if (followsTrack() && revived != null && revived.isAlive() && !killLanded) {
+            int ki = killerTrack.size() - (reliveTicks - reliveTick);
+            if (ki >= 0 && ki < killerTrack.size()) {
+                Recorder.Track t = killerTrack.get(Math.min(ki, Math.max(0, killKi)));
+                revived.snapTo(t.x(), t.y(), t.z());
+                revived.setYRot(t.yaw());
+                revived.setYHeadRot(t.yaw());
+            }
+        }
+
         if (scheduledKillTick >= 0 && reliveTick >= scheduledKillTick
                 && revived != null && revived.isAlive()) {
             striking = true;
@@ -614,17 +676,11 @@ public final class LoopSession {
             scheduledKillTick = -1;
         }
         if (striking) strikeUnseen(player);
+        if (!burstFired && !burst.isEmpty() && (killLanded || reliveTick >= reliveTicks - 15)) fireBurst();
 
         if (ParadoxConfig.reliveInvulnerable) {
             player.setInvulnerable(true);
             player.fallDistance = 0;
-        }
-
-        if (reliveTick % 4 == 0) {
-            double secs = Math.max(0, (reliveTicks - reliveTick) / 20.0);
-            player.sendSystemMessage(Component.literal(
-                    String.format("§d↻ re-living §f%.1fs §8| §7%d/%d changes restored",
-                            secs, scriptCursor, script.size())), true);
         }
 
         if (glimpse && reliveTick == glimpseAt) {
@@ -633,7 +689,7 @@ public final class LoopSession {
                     journal.now() + ParadoxConfig.remnantLingerSeconds * 20, origin());
             ParadoxAdvancements.grant(player, "something_pale");
             player.sendSystemMessage(Component.literal(
-                    "§d§oSomething pale is standing there.\n§7Right-click it, quickly, before it goes."));
+                    "§dRight-click the Remnant to keep it."));
         }
 
         if (reliveTick >= reliveTicks) {
@@ -689,29 +745,94 @@ public final class LoopSession {
 
         if (last) {
             revived.hurtServer(level, level.damageSources().magic(), Float.MAX_VALUE);
-            player.sendSystemMessage(Component.literal("§7Something you cannot see just killed it."));
+            if (revived.isAlive()) revived.discard();   // the blow must never be a message with nothing behind it
+            killLanded = true;
             striking = false;
+            showLived(player);
         } else {
             revived.hurtServer(level, level.damageSources().magic(),
                     Math.max(2.0F, revived.getMaxHealth() / 3.0F));
         }
     }
 
+    /**
+     * A creeper kills you by ceasing to exist, so the thing that "killed you" is a copy we conjure
+     * and put down on cue. Any OTHER creeper standing near the spot is not part of that story, and
+     * leaving it there means the rescue ends with you being blown up by a creeper that was never
+     * the one you just killed (seen 2026-10-10: killed on cue, "YOU LIVED", then dead five seconds
+     * later). So for explosion deaths, strays of the killer's own type close to the spot go too.
+     * Everything else, including every other kind of mob, is left alone.
+     */
+    private void sweepStrays(String when) {
+        if (kind != Kind.EXPLOSION || killerType != EntityTypes.CREEPER) return;
+        AABB box = new AABB(deathPos).inflate(16.0);
+        List<Mob> strays = level.getEntitiesOfClass(Mob.class, box,
+                e -> e.getType() == killerType && e != revived && e.isAlive() && e != phantom);
+        for (Mob m : strays) {
+            Paradox.LOG.info("[paradox] {}: removing stray {} at {} {} {}", when, killerType.getDescriptionId(),
+                    (int) m.getX(), (int) m.getY(), (int) m.getZ());
+            m.discard();
+        }
+    }
+
+    /**
+     * The crater of an explosion death is logged a moment after the death itself, so it ends up in the
+     * script and was being re-dug one block at a time, each with its own little break sound. Pull the
+     * blocks that vanished together with the blast out of the script; {@link #fireBurst()} sets them
+     * off as a single explosion.
+     */
+    private void splitBurst() {
+        if (kind != Kind.EXPLOSION) return;
+        List<BlockJournal.Change> blast = new ArrayList<>();
+        List<BlockJournal.Change> rest = new ArrayList<>();
+        for (BlockJournal.Change c : script) {
+            boolean removal = c.after().isAir() && !c.before().isAir();
+            if (removal && c.tick() <= deathTick + 10) blast.add(c); else rest.add(c);
+        }
+        if (blast.size() < 4) return;     // not a crater, just a block or two
+        this.burst = blast;
+        this.script = rest;
+    }
+
+    /** All of the crater at once, with the real blast sound and the big puff - and nothing that can hurt. */
+    private void fireBurst() {
+        burstFired = true;
+        double cx = 0, cy = 0, cz = 0;
+        for (BlockJournal.Change c : burst) {
+            BlockPos pos = BlockPos.of(c.pos());
+            cx += pos.getX() + 0.5; cy += pos.getY() + 0.5; cz += pos.getZ() + 0.5;
+        }
+        cx /= burst.size(); cy /= burst.size(); cz /= burst.size();
+        for (BlockJournal.Change c : burst) {
+            level.setBlock(BlockPos.of(c.pos()), c.after(), Block.UPDATE_ALL);
+        }
+        level.playSound(null, cx, cy, cz, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, 4.0F, 0.9F);
+        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, cx, cy, cz, 1, 0.0, 0.0, 0.0, 0.0);
+        level.sendParticles(ParticleTypes.EXPLOSION, cx, cy, cz, 12, 1.2, 0.8, 1.2, 0.0);
+    }
+
     private void finishRelive(ServerPlayer player) {
         // Anything the schedule did not reach still has to land, or the world is left half-fixed.
+        if (!burstFired && !burst.isEmpty()) fireBurst();
         while (scriptCursor < script.size()) {
             applyChange(script.get(scriptCursor++));
         }
         finished = true;
         cleanup();
+        sweepStrays("relive end");
+        Recovery.releaseAll(player);
         if (!dryRun) markRescued(player);
         player.setInvulnerable(false);
         player.removeEffect(MobEffects.INVISIBILITY);
         player.setInvisible(false);
-        player.sendSystemMessage(Component.literal("§a§l↺ YOU LIVED. §r§7The loop is closed.\n"
-                + (heldElsewhere ? "§5Nothing comes loose. Yours is still being held."
-                        : glimpse ? "§d§oThis time you saw it. It is still there."
-                        : "§8You never saw who saved you.")));
+        showLived(player);
+    }
+
+    private void showLived(ServerPlayer player) {
+        if (livedShown) return;
+        livedShown = true;
+        title(player, "§aYou lived", "", 50);
+        playTo(player, ParadoxSounds.LOOP_LIVED);
     }
 
     // ---------------------------------------------------------------------------------
@@ -734,6 +855,7 @@ public final class LoopSession {
         player.getAbilities().flying = false;
         player.setGameMode(stashedGameMode == GameType.CREATIVE ? GameType.SURVIVAL : stashedGameMode);
         player.onUpdateAbilities();
+        Recovery.releaseAll(player);
 
         player.snapTo(deathPos.getX() + 0.5, deathPos.getY() + 0.1, deathPos.getZ() + 0.5);
 
@@ -742,24 +864,28 @@ public final class LoopSession {
             player.setHealth(Math.min(ParadoxConfig.returnHealth, player.getMaxHealth()));
             player.setRemainingFireTicks(0);
             player.fallDistance = 0;
-            player.sendSystemMessage(Component.literal(
-                    "§a§l↺ PARADOX RESOLVED — §r§ayou live.\n§7" + why + ". Everything is where you left it."));
+            title(player, "§aYou lived", "", 50);
+            playTo(player, ParadoxSounds.LOOP_LIVED);
         } else if (dryRun) {
             // Nothing was ever at stake here, so nothing dies. Hand the body back intact.
             player.setHealth(Math.max(ParadoxConfig.returnHealth, 1.0f));
             player.setRemainingFireTicks(0);
             player.fallDistance = 0;
-            player.sendSystemMessage(Component.literal("§e§l⏱ DRY RUN OVER — §r§eyou are fine.\n§7"
-                    + why + ", but this was a test. A real death here would have been permanent."));
+            title(player, "§eTest over", "", 50);
         } else {
             ParadoxAdvancements.grant(player, "the_loop_closes");
-            player.sendSystemMessage(Component.literal("§4§l☠ THE LOOP CLOSED — §r§4" + why + "."));
             player.setHealth(1.0f);
             player.hurtServer(level, level.damageSources().genericKill(), Float.MAX_VALUE);
         }
     }
 
     /** A real cause was actually fixed - not a test, not a walk-away. */
+    /** A mob death with a recorded route and a known kill point can be replayed exactly. */
+    private boolean followsTrack() {
+        return (kind == Kind.MOB || kind == Kind.EXPLOSION) && !killerTrack.isEmpty()
+                && killKi >= 0 && killKi < killerTrack.size();
+    }
+
     private void markRescued(ServerPlayer player) {
         ParadoxAdvancements.grant(player, "first_rescue");
         if (ticksLeft <= 40) ParadoxAdvancements.grant(player, "cutting_it_close");
@@ -771,6 +897,7 @@ public final class LoopSession {
         if (phantom != null)    { phantom.discard();    phantom = null; }
         if (marker != null)     { marker.discard();     marker = null; }
         if (ghostBody != null)  { ghostBody.discard();  ghostBody = null; }
+        if (bar != null)        { bar.removeAllPlayers(); bar = null; }
     }
 
     public void markDryRun() { this.dryRun = true; }

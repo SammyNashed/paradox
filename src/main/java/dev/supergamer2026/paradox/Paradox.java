@@ -42,7 +42,7 @@ public final class Paradox implements ModInitializer {
     public static final Logger LOG = LoggerFactory.getLogger(MOD_ID);
 
     private static final Map<UUID, Recorder> RECORDERS = new HashMap<>();
-    private static final Map<UUID, LoopSession> SESSIONS = new HashMap<>();
+    static final Map<UUID, LoopSession> SESSIONS = new HashMap<>();
     private static final Map<UUID, BlockJournal> JOURNALS = new HashMap<>();
 
     @Override
@@ -50,6 +50,8 @@ public final class Paradox implements ModInitializer {
         ParadoxConfig.load();
         ParadoxSounds.init();
         ParadoxItems.init();
+        Remnant.init();
+        Recovery.init();
         LOG.info("[paradox] armed - {}s window, unlimited={}", ParadoxConfig.recordSeconds, ParadoxConfig.unlimited);
 
         // 1. Keep a rolling record of everything that just happened to every player.
@@ -101,6 +103,9 @@ public final class Paradox implements ModInitializer {
 
             // A loop is closing on them: this death is the real one.
             if (SESSIONS.containsKey(id)) return true;
+
+            // Built for hardcore: in an ordinary survival world it stands down and you simply die, unless asked otherwise.
+            if (!ParadoxConfig.survivalWorlds && !player.level().getLevelData().isHardcore()) return true;
 
             // A Remnant is a totem, not a fallback. It fires before anything else, so a player
             // carrying one never becomes a ghost at all.
@@ -200,6 +205,8 @@ public final class Paradox implements ModInitializer {
 
         // A bound Remnant lives in the world, not in our map, so pick it back up after a relog.
         ServerPlayerEvents.JOIN.register(Remnant::reacquire);
+        // A game that died in the middle of a loop leaves a creative ghost with no inventory in the save: undo that.
+        ServerPlayerEvents.JOIN.register(Recovery::recoverOnJoin);
 
         CommandRegistrationCallback.EVENT.register((dispatcher, access, env) ->
                 dispatcher.register(buildCommand()));
@@ -253,7 +260,7 @@ public final class Paradox implements ModInitializer {
                     SESSIONS.put(p.getUUID(), s);
                     ParadoxAdvancements.grant(p, "dry_run");
                     ctx.getSource().sendSystemMessage(Component.literal(
-                            "§e[paradox] dry run - you cannot die from this, even if the timer runs out"));
+                            "§e[paradox] test run, you can't die from this"));
                     return 1;
                 }))
                 .then(Commands.literal("abort").executes(ctx -> {

@@ -55,6 +55,7 @@ public final class Avatars {
 
                 setProfile(m, viewer);
                 setImmovable(m, true);
+                hideDescription(m);
 
                 m.setCustomName(Component.literal("§b" + name));
                 m.setCustomNameVisible(true);
@@ -85,6 +86,19 @@ public final class Avatars {
             Field f = Mannequin.class.getDeclaredField("DATA_PROFILE");
             f.setAccessible(true);
             m.getEntityData().set((EntityDataAccessor<ResolvableProfile>) f.get(null), profile);
+        }
+
+        /** A mannequin carries a caption under its name that reads "NPC". Past-you is not an NPC. */
+        @SuppressWarnings("unchecked")
+        private static void hideDescription(Mannequin m) {
+            try {
+                Field f = Mannequin.class.getDeclaredField("DATA_DESCRIPTION");
+                f.setAccessible(true);
+                m.getEntityData().set((EntityDataAccessor<java.util.Optional<Component>>) f.get(null),
+                        java.util.Optional.empty());
+            } catch (Throwable ignored) {
+                // Cosmetic only - the caption just stays.
+            }
         }
 
         @SuppressWarnings("unchecked")

@@ -1,4 +1,20 @@
 {
+  "loop.death": {
+    "subtitle": "subtitles.paradox.loop.death",
+    "sounds": [{ "name": "block.respawn_anchor.deplete", "type": "event", "pitch": 0.7 }]
+  },
+  "loop.heartbeat": {
+    "subtitle": "subtitles.paradox.loop.heartbeat",
+    "sounds": [{ "name": "entity.warden.heartbeat", "type": "event" }]
+  },
+  "loop.rewind": {
+    "subtitle": "subtitles.paradox.loop.rewind",
+    "sounds": [{ "name": "entity.illusioner.mirror_move", "type": "event", "pitch": 0.6 }]
+  },
+  "loop.lived": {
+    "subtitle": "subtitles.paradox.loop.lived",
+    "sounds": [{ "name": "block.beacon.power_select", "type": "event" }]
+  },
   "remnant.chirp": {
     "subtitle": "subtitles.paradox.remnant.chirp",
     "sounds": [{ "name": "entity.vex.ambient", "type": "event" }]

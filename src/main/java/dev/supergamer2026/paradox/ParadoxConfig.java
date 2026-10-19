@@ -22,7 +22,7 @@ public final class ParadoxConfig {
     /** Only the last few seconds before the death are worth replaying. */
     public static int replayWindowSeconds = 6;
     /** Seconds you actually get to fix things. Independent of the replay length. */
-    public static int interventionSeconds = 60;
+    public static int interventionSeconds = 30;
     /** How far back the rewind puts you. Longer means you carry on from further before the death. */
     public static int rewindSeconds = 12;
     /** v0.2: rewind the world and let you re-live the seconds your ghost just rescued. */
@@ -49,6 +49,8 @@ public final class ParadoxConfig {
     public static boolean useSatchel = true;
     /** Refuse to run when more than one player is online, since the rewind is single-player safe only. */
     public static boolean singlePlayerOnly = true;
+    /** Paradox is built for hardcore worlds; in survival it stands down unless this is on. */
+    public static boolean survivalWorlds = false;
 
     public static int recordTicks() {
         return Math.max(40, recordSeconds * 20);
@@ -98,6 +100,7 @@ public final class ParadoxConfig {
                 unlimited = getBool(props, "unlimited", unlimited);
                 useSatchel = getBool(props, "useSatchel", useSatchel);
                 singlePlayerOnly = getBool(props, "singlePlayerOnly", singlePlayerOnly);
+                survivalWorlds = getBool(props, "survivalWorlds", survivalWorlds);
                 // Write it straight back so keys added in later versions show up in the file
                 // instead of silently sitting at their defaults where nobody can find them.
                 save();
@@ -130,6 +133,7 @@ public final class ParadoxConfig {
         props.setProperty("unlimited", String.valueOf(unlimited));
         props.setProperty("useSatchel", String.valueOf(useSatchel));
         props.setProperty("singlePlayerOnly", String.valueOf(singlePlayerOnly));
+        props.setProperty("survivalWorlds", String.valueOf(survivalWorlds));
         try {
             Path p = file();
             Files.createDirectories(p.getParent());

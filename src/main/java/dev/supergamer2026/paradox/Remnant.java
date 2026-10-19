@@ -57,9 +57,13 @@ public final class Remnant {
 
     private Remnant() {}
 
-    public static final String GLIMPSE_NAME = "✧ something pale";
-    public static final String BOUND_NAME = "Remnant of the Loop";
+    /** Identity lives in the nameplate: a glimpse carries ✧, a bound one carries BOUND_NAME. They must never overlap. */
+    public static final String GLIMPSE_NAME = "✧";
+    public static final String BOUND_NAME = "Remnant";
     private static final char PIP = '✦';
+
+    /** Touching the class registers its attachment types, so a player's saved Remnant state survives loading. */
+    public static void init() {}
 
     /** How this one died, kept on the entity so it survives a reload. */
     public static final AttachmentType<String> ORIGIN = AttachmentRegistry.createPersistent(
@@ -241,8 +245,8 @@ public final class Remnant {
         vex.setDeltaMovement(0, 0, 0);
         vex.setGlowingTag(true);
         vex.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-        vex.setCustomName(Component.literal("§5✦ caged"));
-        vex.setCustomNameVisible(true);
+        vex.setCustomName(Component.literal("§5✦ caged"));   // kept, hidden: a named mob never despawns
+        vex.setCustomNameVisible(false);
         ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) vex).setAttached(TRAPPED, true);
         ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) vex).setAttached(CAGE_AT, spot.getX() + "," + spot.getY() + "," + spot.getZ());
         ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) vex).setAttached(OWNER_ID, player.getUUID().toString());
@@ -255,8 +259,8 @@ public final class Remnant {
         sl.playSound(null, spot.getX(), spot.getY(), spot.getZ(),
                 SoundEvents.EVOKER_CAST_SPELL, SoundSource.HOSTILE, 1.2F, 0.7F);
         player.sendSystemMessage(Component.literal(
-                "§7It is caged at §f" + spot.getX() + " " + spot.getY() + " " + spot.getZ()
-                        + "§7. Break the bars, or kill the one that put it there."));
+                "§5Your Remnant got caged at §f" + spot.getX() + " " + spot.getY() + " " + spot.getZ()
+                        + "§5. Break the bars or kill the glowing evoker."));
     }
 
     /** Somewhere with room for a box, as near the evoker as we can manage. */
@@ -355,8 +359,6 @@ public final class Remnant {
             if (p != null) {
                 ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) p).setAttached(AWAITING_RESCUE, null);
                 ParadoxAdvancements.grant(p, "broken_free");
-                p.sendSystemMessage(Component.literal("§d§l✦ IT IS OUT. §r§7Thin, and down to "
-                        + Math.max(1, ParadoxConfig.remnantFreedLives) + ". Take it back before it drifts off."));
             }
         }
         ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) vex).setAttached(OWNER_ID, null);
@@ -382,8 +384,7 @@ public final class Remnant {
     /** Right-clicked. It belongs to them now. */
     public static void bind(ServerPlayer player, Vex vex) {
         if (hasAny(player)) {
-            player.sendSystemMessage(Component.literal(
-                    "§8It will not come to you. One is already yours."));
+            player.sendSystemMessage(Component.literal("§7You already have a Remnant"), true);
             return;
         }
         Integer forced = ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) vex).getAttached(BIND_LIVES);
@@ -405,9 +406,6 @@ public final class Remnant {
                     16, 0.4, 0.4, 0.4, 0.05);
         }
         ParadoxAdvancements.grant(player, "the_thing_that_saved_you");
-        player.sendSystemMessage(Component.literal("§d§l✦ THE REMNANT STAYS WITH YOU. §r§7It will stop your next §f"
-                + ParadoxConfig.remnantLives + "§7 death" + (ParadoxConfig.remnantLives == 1 ? "" : "s")
-                + " outright. No loop, no ghost - it simply will not let it happen."));
     }
 
     // ---------------------------------------------------------------------------------
@@ -446,15 +444,11 @@ public final class Remnant {
         if (left > 0) {
             setLives(vex, left);
             ParadoxAdvancements.grant(player, "it_takes_it_for_you");
-            player.sendSystemMessage(Component.literal(
-                    "§d§l✦ THE REMNANT TAKES IT FOR YOU. §r§7It dims a little. §f" + left + "§7 left."));
         } else {
             poof(vex);
             release(player);
             ParadoxAdvancements.grant(player, "it_takes_it_for_you");
             ParadoxAdvancements.grant(player, "the_last_of_itself");
-            player.sendSystemMessage(Component.literal("§d§l✦ THE REMNANT SPENDS THE LAST OF ITSELF. §r§8It came "
-                    + "out of a loop you closed once. Now it is gone, and you are still here."));
         }
         return true;
     }
@@ -905,7 +899,6 @@ public final class Remnant {
             mood.caster = null;
             mood.bindPressure = 0;
             vex.setTarget(null);
-            player.sendSystemMessage(Component.literal("§8Something below has noticed it."));
             sl.playSound(null, vex.getX(), vex.getY(), vex.getZ(),
                     ParadoxSounds.REMNANT_WARN, SoundSource.NEUTRAL, 1.0F, 0.5F);
             sl.playSound(null, warden.getX(), warden.getY(), warden.getZ(),
@@ -928,8 +921,6 @@ public final class Remnant {
                             ParadoxSounds.REMNANT_BIND, SoundSource.NEUTRAL, 0.9F, 1.3F);
                     sl.sendParticles(ParticleTypes.HAPPY_VILLAGER, vex.getX(), vex.getY() + 0.4, vex.getZ(),
                             20, 0.4, 0.4, 0.4, 0.05);
-                    player.sendSystemMessage(Component.literal(
-                            "§d✦ §7The allay gives something back. §f" + (lives + 1) + "§7 now."));
                     return;
                 }
             }
@@ -977,15 +968,12 @@ public final class Remnant {
                     24, 0.3, 0.3, 0.3, 0.05);
             if (left > 0) {
                 setLives(vex, left);
-                player.sendSystemMessage(Component.literal(
-                        "§5The evoker pulls a piece of it away. §f" + left + "§5 left."));
             } else {
                 // Not destroyed - taken. The evoker is carrying it now, and it shows.
                 ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) caster).setAttached(HELD_ORIGIN, originOf(vex));
                 caster.setGlowingTag(true);
-                caster.setCustomName(Component.literal("§5✦ Binder"));
-                caster.setCustomNameVisible(true);
-                player.sendSystemMessage(Component.literal("§5§lIT IS TAKEN AND CAGED."));
+                caster.setCustomName(Component.literal("§5✦ Binder"));   // kept, hidden: it must not despawn with the Remnant
+                caster.setCustomNameVisible(false);
                 imprison(sl, player, vex, caster);
                 return;   // it is caged and no longer theirs; nothing below applies to it
             }
@@ -1027,8 +1015,6 @@ public final class Remnant {
             vex.discard();
             release(player);
             ParadoxAdvancements.grant(player, "it_remembers");
-            player.sendSystemMessage(Component.literal(
-                    "§8§lIT IS EATEN. §r§8Every star at once. The warden does not take pieces."));
         }
     }
 
@@ -1107,9 +1093,6 @@ public final class Remnant {
             sl.sendParticles(ParticleTypes.END_ROD, vex.getX(), vex.getY() + 0.3, vex.getZ(),
                     8, 0.25, 0.25, 0.25, 0.02);
         }
-        int lives = livesOf(vex);
-        player.sendSystemMessage(Component.literal("§d✦ §7It hums. §f" + lives
-                + "§7 death" + (lives == 1 ? "" : "s") + " it will still take for you."));
         Mood mood = MOODS.computeIfAbsent(player.getUUID(), k -> new Mood());
         mood.dartUntil = 0;
     }

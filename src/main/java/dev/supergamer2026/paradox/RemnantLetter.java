@@ -30,7 +30,9 @@ public final class RemnantLetter {
 
     private RemnantLetter() {}
 
-    public static final String TITLE = "A Letter, Unsigned";
+    public static final String TITLE = "From your Remnant";
+    /** Letters dropped before 1.1.3 still carry this title. */
+    private static final String OLD_TITLE = "A Letter, Unsigned";
 
     /** Owner -> the tick their letter should come apart, once they have opened it. */
     private static final Map<java.util.UUID, Integer> EXPIRY = new HashMap<>();
@@ -38,34 +40,25 @@ public final class RemnantLetter {
     public static ItemStack create(String origin) {
         List<Filterable<Component>> pages = List.of(
                 page("""
-                        §0You will not remember me.
+                        §0Hey, it's me.
 
-                        §0That is not a complaint. It is the whole point of what I did.
-
-                        §0There was a moment. You did not survive it. I was what was left over when you did anyway."""),
+                        §0The one who saved you back there. You didn't see me, but I was there."""),
+                page("§0I can take " + ParadoxConfig.remnantLives + " deaths for you.\n\n"
+                        + "§0Each one costs me a star. When they're all gone, so am I.\n\n"
+                        + "§0Keep me close."),
                 page("""
-                        §0I can take three deaths for you.
-
-                        §0Not stop them. §0§oTake§0 them. Each one costs me a star, and when the last one goes out, so do I.
-
-                        §0You will not have to ask. I will simply be there first."""),
-                page("""
-                        §0There is one thing I cannot be calm about.
+                        §0What scares me most:
 
                         §0""" + causeLine(origin) + """
 
 
-                        §0I was there for it. I have not been able to put it down since.
-
-                        §0When it is near you, I will be between you and it. Forgive me."""),
+                        §0If it comes back, I'll get in its way."""),
                 page("""
-                        §0You have seen others like me.
+                        §0There are others like me out there.
 
-                        §0Small. Pale. Carrying a sword nobody handed them willingly.
+                        §0Be nice to them.
 
-                        §0We were all somebody once. Most of us never got asked.
-
-                        §0                    §8- ✦"""));
+                        §0                    §8✦"""));
 
         WrittenBookContent content = new WrittenBookContent(
                 new Filterable<>(TITLE, Optional.empty()), "✦", 0, pages, true);
@@ -80,31 +73,31 @@ public final class RemnantLetter {
         if (origin.startsWith("MOB:")) {
             String path = origin.substring(origin.indexOf(':', 4) + 1).replace('_', ' ');
             String article = "aeiou".indexOf(Character.toLowerCase(path.charAt(0))) >= 0 ? "An " : "A ";
-            return article + path + ". It is still out there somewhere, and I have not forgotten it.";
+            return article + path + ". I won't forget it.";
         }
         if (origin.startsWith("CONTACT")) {
             return switch (sub(origin, "CONTACT")) {
-                case "cactus" -> "A cactus. Of everything that could have done it, it was that.";
-                case "sweetBerryBush" -> "Thorns. You barely felt the first one, and there is never only one.";
-                case "hotFloor" -> "The floor was stone until it was not. You found out on the way down.";
-                case "freeze" -> "The cold got into you before either of us noticed it had started.";
-                case "stalagmite" -> "Something came down out of the dark, on a single point, and you were under it.";
-                case "wither" -> "A flower that has no business being alive took you apart slowly.";
-                default -> "Something you brushed past. Small, and enough.";
+                case "cactus" -> "A cactus. Seriously, a cactus.";
+                case "sweetBerryBush" -> "Berry bushes. They hurt more than they look.";
+                case "hotFloor" -> "Magma blocks. Watch your step.";
+                case "freeze" -> "Powder snow. You froze.";
+                case "stalagmite" -> "Dripstone. Look up in caves.";
+                case "wither" -> "A wither rose.";
+                default -> "A block you walked into.";
             };
         }
         if (origin.startsWith("SUFFOCATE")) {
             return "cramming".equals(sub(origin, "SUFFOCATE"))
-                    ? "There got to be too many of something in too little room, and you were the one it did not spare."
-                    : "The world closed in on you and would not let go.";
+                    ? "Too many mobs in too little space."
+                    : "Getting stuck in a wall.";
         }
         return switch (origin) {
-            case "LAVA" -> "You went into the lava. I watched it close over you.";
-            case "FIRE" -> "You burned. I could do nothing but count the seconds.";
-            case "DROWN" -> "You drowned. It was quiet, and it took a long time.";
-            case "FALL" -> "You fell. There was a moment where you knew, and then there was not.";
-            case "EXPLOSION" -> "Something detonated near you. There was a sound, and then there was not enough of you left standing.";
-            default -> "I could not tell you what it was. Only that it happened, and that I was there.";
+            case "LAVA" -> "Lava.";
+            case "FIRE" -> "Fire.";
+            case "DROWN" -> "Drowning.";
+            case "FALL" -> "Falling.";
+            case "EXPLOSION" -> "Explosions.";
+            default -> "Whatever got you. I didn't see what it was.";
         };
     }
 
@@ -121,7 +114,7 @@ public final class RemnantLetter {
     public static boolean isLetter(ItemStack stack) {
         if (stack.isEmpty() || !stack.is(Items.WRITTEN_BOOK)) return false;
         WrittenBookContent c = stack.get(DataComponents.WRITTEN_BOOK_CONTENT);
-        return c != null && TITLE.equals(c.title().raw());
+        return c != null && (TITLE.equals(c.title().raw()) || OLD_TITLE.equals(c.title().raw()));
     }
 
     /** It flies the letter over and lets it fall at your feet. */

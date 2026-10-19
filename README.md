@@ -6,7 +6,7 @@
 
 ![Minecraft 26.2](https://img.shields.io/badge/Minecraft-26.2-brightgreen)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-dbd0b4)
-![Version](https://img.shields.io/badge/Version-1.1.3-blue)
+![Version](https://img.shields.io/badge/Version-1.1.4-blue)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 </div>

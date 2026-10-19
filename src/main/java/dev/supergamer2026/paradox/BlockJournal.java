@@ -56,10 +56,16 @@ public final class BlockJournal {
     /** Diff the cached region against the live world and record whatever moved. */
     public void poll(ServerLevel level, BlockPos playerPos) {
         if (center == null || playerPos.distSqr(center) > recenterDistSqr) {
+            if (center != null) flush(level);   // log what changed before the window moves off it
             recenter(level, playerPos);
             return;                     // a recenter is not a set of changes
         }
 
+        flush(level);
+    }
+
+    /** Diff the cached region right now, without moving it. */
+    public void flush(ServerLevel level) {
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (Map.Entry<Long, BlockState> e : cache.entrySet()) {
             m.set(BlockPos.of(e.getKey()));

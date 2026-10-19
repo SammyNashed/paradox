@@ -26,6 +26,10 @@ public final class ParadoxSounds {
     public static final SoundEvent REMNANT_SAVE   = create("remnant.save");
     public static final SoundEvent REMNANT_FADE   = create("remnant.fade");
     public static final SoundEvent REMNANT_APPEAR = create("remnant.appear");
+    public static final SoundEvent LOOP_DEATH     = create("loop.death");
+    public static final SoundEvent LOOP_HEARTBEAT = create("loop.heartbeat");
+    public static final SoundEvent LOOP_REWIND    = create("loop.rewind");
+    public static final SoundEvent LOOP_LIVED     = create("loop.lived");
 
     private static SoundEvent create(String path) {
         Identifier id = Identifier.fromNamespaceAndPath(Paradox.MOD_ID, path);
@@ -34,6 +38,6 @@ public final class ParadoxSounds {
 
     /** Touching the class is enough to run the static initialisers. */
     public static void init() {
-        Paradox.LOG.info("[paradox] registered {} sounds", 8);
+        Paradox.LOG.info("[paradox] registered {} sounds", 12);
     }
 }

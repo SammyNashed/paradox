@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.4
+
+- the mob that killed you now walks the same route in the replay as it did when you saw it as a ghost, and dies at the same spot where you killed it (before, it walked straight at you and died somewhere else)
+
 ## 1.1.3
 
 - chat messages are mostly gone. the timer is a boss bar now, and dying/rewinding uses sounds and effects instead of text
