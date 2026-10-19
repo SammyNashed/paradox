@@ -57,8 +57,8 @@ public final class Avatars {
                 setImmovable(m, true);
                 hideDescription(m);
 
-                m.setCustomName(Component.literal("§b" + name));
-                m.setCustomNameVisible(true);
+                m.setCustomName(Component.literal("§b" + name));   // kept for skin lookups, but no floating label
+                m.setCustomNameVisible(false);
                 m.setInvulnerable(true);
                 m.setSilent(true);
                 m.setNoGravity(true);
@@ -194,6 +194,9 @@ public final class Avatars {
      * The body the player flies around in. A vex: small, pale, already reads as a spirit.
      * Disarmed on purpose - it spawns holding an iron sword and that would be misleading.
      */
+    /** Hidden name the client uses to find your own ghost body (see ParadoxClient). */
+    public static final String GHOST_NAME = "paradox:ghost";
+
     public static Vex spawnGhostBody(ServerLevel level, ServerPlayer player) {
         Vex vex = EntityTypes.VEX.create(level, EntitySpawnReason.MOB_SUMMONED);
         if (vex == null) return null;
@@ -205,6 +208,8 @@ public final class Avatars {
         vex.setPersistenceRequired();
         vex.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
         vex.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+        vex.setCustomName(Component.literal(GHOST_NAME));
+        vex.setCustomNameVisible(false);
         level.addFreshEntity(vex);
         return vex;
     }

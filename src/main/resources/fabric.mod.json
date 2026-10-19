@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "paradox",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "name": "Paradox",
   "description": "Hardcore mod. When you die you get one chance to go back and stop it.",
   "authors": [
@@ -12,6 +12,9 @@
   "entrypoints": {
     "main": [
       "dev.supergamer2026.paradox.Paradox"
+    ],
+    "client": [
+      "dev.supergamer2026.paradox.ParadoxClient"
     ],
     "modmenu": [
       "dev.supergamer2026.paradox.ParadoxModMenu"

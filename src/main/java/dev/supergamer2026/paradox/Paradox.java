@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.world.InteractionResult;
@@ -159,6 +160,11 @@ public final class Paradox implements ModInitializer {
         });
 
         // 4. Right-click a glimpse to keep it.
+        // A creative ghost one-shots anything, including its own body at its feet.
+        AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) ->
+                entity.getCustomName() != null && Avatars.GHOST_NAME.equals(entity.getCustomName().getString())
+                        ? InteractionResult.FAIL : InteractionResult.PASS);
+
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (!(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
             if (entity instanceof Vex vex && Remnant.isGlimpse(vex)) {

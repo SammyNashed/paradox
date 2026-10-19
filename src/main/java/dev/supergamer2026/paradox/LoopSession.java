@@ -191,7 +191,8 @@ public final class LoopSession {
             case "inWall", "cramming" -> Kind.SUFFOCATE;
             case "fall", "flyIntoWall" -> Kind.FALL;
             case "explosion", "explosion.player" -> Kind.EXPLOSION;
-            case "outOfWorld", "starve", "genericKill" -> Kind.UNPREVENTABLE;
+            // /damage and /kill: there is nothing in the world to undo.
+            case "outOfWorld", "starve", "genericKill", "generic" -> Kind.UNPREVENTABLE;
             default -> Kind.GENERIC;
         };
     }
@@ -353,6 +354,12 @@ public final class LoopSession {
                 mob.setNoAi(true);              // harmless: it is a memory, not a threat
                 mob.setSilent(true);
                 mob.setGlowingTag(true);
+                // Dress it like the real one: a bare-headed copy of a helmeted zombie burns in daylight.
+                if (killerEntity instanceof Mob real) {
+                    for (net.minecraft.world.entity.EquipmentSlot slot : net.minecraft.world.entity.EquipmentSlot.values()) {
+                        mob.setItemSlot(slot, real.getItemBySlot(slot).copy());
+                    }
+                }
                 mob.setPersistenceRequired();
                 level.addFreshEntity(mob);
                 this.phantom = mob;
@@ -440,6 +447,7 @@ public final class LoopSession {
                 Recorder.Track t = killerTrack.get(ki);
                 phantom.snapTo(t.x(), t.y(), t.z());
                 phantom.setYRot(t.yaw());
+                phantom.clearFire();   // a memory doesn't catch fire
                 replayKi = ki;
             }
         }
@@ -614,6 +622,7 @@ public final class LoopSession {
 
         this.phase = Phase.RELIVE;
         this.reliveTick = 0;
+        Paradox.LOG.info("[paradox] rewind");
 
         // The rewind is felt, not read: a blink, a pull of sound, the air folding back in.
         player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 12, 0, false, false, false));
@@ -831,6 +840,7 @@ public final class LoopSession {
     private void showLived(ServerPlayer player) {
         if (livedShown) return;
         livedShown = true;
+        Paradox.LOG.info("[paradox] lived");
         title(player, "§aYou lived", "", 50);
         playTo(player, ParadoxSounds.LOOP_LIVED);
     }

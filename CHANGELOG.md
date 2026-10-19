@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.5
+
+- the replay zombie has the same gear as the real one now, so it doesn't burn in daylight
+- no more name tag floating over the replay copy of you
+- you can't hit your own ghost body by accident anymore
+- deaths from /damage don't start a rescue loop anymore (there's nothing to fix)
+- your ghost body doesn't block your view in first person anymore, and you still see yourself as the ghost in third person (F5). needs Paradox on the client too, without it the body just always shows
+
 ## 1.1.4
 
 - the mob that killed you now walks the same route in the replay as it did when you saw it as a ghost, and dies at the same spot where you killed it (before, it walked straight at you and died somewhere else)
